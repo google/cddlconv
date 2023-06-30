@@ -1,4 +1,4 @@
-mod type_script_engine;
+mod engines;
 mod util;
 
 use anyhow::Result;
@@ -31,7 +31,7 @@ fn main() -> Result<()> {
 
     match args.format {
         EngineType::TypeScript => {
-            let mut engine = type_script_engine::TypeScriptEngine::new();
+            let mut engine = engines::typescript::Engine::new();
             engine.visit_cddl(&cddl)?;
         }
     };

@@ -1,12 +1,6 @@
-use crate::util::split_namespaced;
+use cddl::{Error, visitor::Visitor};
 
-use super::util::is_alpha;
-use super::util::to_namespaced;
-use super::util::to_pascalcase;
-use cddl::ast::parent::Error;
-use cddl::ast::Operator;
-use cddl::visitor::walk_type2;
-use cddl::visitor::Visitor;
+use crate::util::{to_namespaced, split_namespaced, to_pascalcase, is_alpha};
 
 #[derive(Default)]
 struct GroupChoiceContext {
@@ -19,15 +13,15 @@ struct Type1Context {
     in_range: bool,
 }
 
-pub struct TypeScriptEngine<'a> {
+pub struct Engine<'a> {
     occurence: Option<&'a cddl::ast::Occurrence<'a>>,
     nested_groups: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
 }
 
-impl<'a, 'b: 'a> TypeScriptEngine<'a> {
-    pub fn new() -> TypeScriptEngine<'a> {
-        TypeScriptEngine {
+impl<'a, 'b: 'a> Engine<'a> {
+    pub fn new() -> Engine<'a> {
+        Engine {
             occurence: None,
             nested_groups: Vec::new(),
             nested_type1: Vec::new(),
@@ -46,7 +40,7 @@ impl<'a, 'b: 'a> TypeScriptEngine<'a> {
     }
 }
 
-impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
+impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
     fn visit_identifier(
         &mut self,
         ident: &cddl::ast::Identifier<'a>,
@@ -286,7 +280,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
         self.nested_type1.push(Type1Context {
             in_range: matches!(
                 t1.operator,
-                Some(Operator {
+                Some(cddl::ast::Operator {
                     operator: cddl::ast::RangeCtlOp::RangeOp { .. },
                     ..
                 })
@@ -316,13 +310,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
                 "regexp" => print!("RegExp"),
                 "false" => print!("false"),
                 "undefined" => print!("undefined"),
-                _ => walk_type2(self, t2)?,
+                _ => cddl::visitor::walk_type2(self, t2)?,
             },
             // cddl::ast::Type2::ParenthesizedType { pt, span, comments_before_type, comments_after_type } => todo!(),
             // cddl::ast::Type2::Map { group, span, comments_before_group, comments_after_group } => todo!(),
             cddl::ast::Type2::Array { .. } => {
                 print!("Array<");
-                walk_type2(self, t2)?;
+                cddl::visitor::walk_type2(self, t2)?;
                 print!(">");
             }
             // cddl::ast::Type2::Unwrap { ident, generic_args, span, comments } => todo!(),
@@ -332,7 +326,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
             // cddl::ast::Type2::DataMajorType { mt, constraint, span } => todo!(),
             // cddl::ast::Type2::Any { span } => todo!(),
             t2 => {
-                walk_type2(self, t2)?;
+                cddl::visitor::walk_type2(self, t2)?;
             }
         }
         Ok(())
