@@ -1,0 +1,19 @@
+extensible-map-example = {
+    ? "optional-key" => int,
+    * tstr => any
+}
+
+extensible-map-example-2 = {
+    ? "optional-key": int,
+    * tstr => any
+}
+
+extensible-map-example-3 = {
+    ? optional-key: int,
+    * tstr => any
+}
+
+extensible-map-example-4 = {
+    ? "optional-key" ^ => int,
+    * tstr => any
+}

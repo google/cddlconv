@@ -30,7 +30,7 @@ impl<'a, 'b: 'a> Engine<'a> {
     /// Requires all type choices to be strings.
     fn visit_enum_type(&mut self, t: &'b cddl::ast::Type<'a>) -> cddl::visitor::Result<Error> {
         for choice in &t.type_choices {
-            if let cddl::ast::Type2::TextValue { value, span } = &choice.type1.type2 {
+            if let cddl::ast::Type2::TextValue { value, .. } = &choice.type1.type2 {
                 println!("{} = \"{}\",", to_pascalcase(value), value.to_string());
             } else {
                 panic!("Called `visit_enum_type` on non-textual type");
@@ -80,7 +80,7 @@ impl<'a, 'b: 'a> Engine<'a> {
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
                 self.visit_array_type_groupname_entry(ge)?;
             }
-            cddl::ast::GroupEntry::InlineGroup { occur, group, .. } => {
+            cddl::ast::GroupEntry::InlineGroup { group, .. } => {
                 if let Some(group) = self.nested_groups.last_mut() {
                     if group.in_object {
                         group.in_object = false;
@@ -226,7 +226,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
             }
             "bstr" | "bytes" => print!("Uint8Array"),
             "tstr" | "text" => print!("string"),
-            "any" => print!("never"),
+            "any" => print!("any"),
             "nil" | "null" => print!("null"),
             "true" => print!("true"),
             "uri" => print!("URL"),
@@ -296,20 +296,10 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
         entry: &'b cddl::ast::GroupEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
         match entry {
-            cddl::ast::GroupEntry::ValueMemberKey {
-                ge,
-                span,
-                leading_comments,
-                trailing_comments,
-            } => {
+            cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
                 self.visit_value_member_key_entry(ge)?;
             }
-            cddl::ast::GroupEntry::TypeGroupname {
-                ge,
-                span,
-                leading_comments,
-                trailing_comments,
-            } => {
+            cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
                 if let Some(group) = self.nested_groups.last_mut() {
                     if group.in_object {
                         group.in_object = false;
@@ -321,13 +311,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
                 }
                 self.visit_type_groupname_entry(ge)?;
             }
-            cddl::ast::GroupEntry::InlineGroup {
-                occur,
-                group,
-                span,
-                comments_before_group,
-                comments_after_group,
-            } => {
+            cddl::ast::GroupEntry::InlineGroup { group, .. } => {
                 if let Some(group) = self.nested_groups.last_mut() {
                     if group.in_object {
                         group.in_object = false;
@@ -419,52 +403,48 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
         mk: &'b cddl::ast::MemberKey<'a>,
     ) -> cddl::visitor::Result<Error> {
         match mk {
-            cddl::ast::MemberKey::Type1 {
-                t1,
-                is_cut,
-                span,
-                comments_before_cut,
-                comments_after_cut,
-                comments_after_arrowmap,
-            } => {
-                print!("[key: ",);
+            cddl::ast::MemberKey::Type1 { t1, is_cut, .. } => {
+                if !is_cut {
+                    print!("[key: ");
+                    self.visit_type1(t1)?;
+                    print!("]: ");
+                    return Ok(());
+                }
+                print!("[");
                 self.visit_type1(t1)?;
-                print!("]: ");
             }
             cddl::ast::MemberKey::Bareword { ident, .. } => {
-                print!(
-                    "{}{}: ",
-                    &ident,
-                    match self.occurence {
-                        Some(cddl::ast::Occurrence {
-                            occur: cddl::ast::Occur::Optional { .. },
-                            ..
-                        })
-                        | Some(cddl::ast::Occurrence {
-                            occur: cddl::ast::Occur::ZeroOrMore { .. },
-                            ..
-                        }) => "?",
-                        Some(cddl::ast::Occurrence {
-                            occur:
-                                cddl::ast::Occur::Exact {
-                                    lower: Some(lower), ..
-                                },
-                            ..
-                        }) if *lower == 0 => "?",
-                        _ => "",
-                    }
-                );
+                print!("[\"{}\"", &ident);
             }
-            cddl::ast::MemberKey::Value {
-                value,
-                span,
-                comments,
-                comments_after_colon,
-            } => {}
+            cddl::ast::MemberKey::Value { value, .. } => {
+                println!("[");
+                self.visit_value(value)?;
+            }
             cddl::ast::MemberKey::NonMemberKey { non_member_key, .. } => {
                 println!("{:?}", non_member_key);
             }
         }
+        print!(
+            "]{}: ",
+            match self.occurence {
+                Some(cddl::ast::Occurrence {
+                    occur: cddl::ast::Occur::Optional { .. },
+                    ..
+                })
+                | Some(cddl::ast::Occurrence {
+                    occur: cddl::ast::Occur::ZeroOrMore { .. },
+                    ..
+                }) => "?",
+                Some(cddl::ast::Occurrence {
+                    occur:
+                        cddl::ast::Occur::Exact {
+                            lower: Some(lower), ..
+                        },
+                    ..
+                }) if *lower == 0 => "?",
+                _ => "",
+            }
+        );
         Ok(())
     }
     fn visit_type1(&mut self, t1: &'b cddl::ast::Type1<'a>) -> cddl::visitor::Result<Error> {
