@@ -1,0 +1,18 @@
+equipment-type = [name: tstr, manufacturer: tstr]
+equipment-tolerances = [+ [float, float]]
+
+person = (
+    name: tstr,
+    age: uint,
+)
+unlimited-people = [* person]
+one-or-two-people = [1*2 person]
+at-most-two-people = [*2 person]
+at-least-two-people = [2* person]
+one-person = [person]
+two-person = [person, person]
+optional-person = [? person]
+person-with-equipment = [* person, *equipment-type]
+person-with-attr-names = [* named: person]
+person-with-attr-names-1 = [* named: person, * equip: equipment-type]
+person-with-attr-names-2 = [* named: person, * equipment-type]
