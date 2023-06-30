@@ -30,5 +30,5 @@ pub fn is_alpha<T: AsRef<str>>(value: T) -> bool {
         .as_ref()
         .to_ascii_lowercase()
         .bytes()
-        .all(|ch| b'a' <= ch && ch <= b'z')
+        .all(|ch| b'a' <= ch && ch <= b'z' || ch == b' ')
 }

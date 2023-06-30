@@ -47,7 +47,7 @@ Extensible = (*text => any)
 js-int = -9007199254740991..9007199254740991
 js-uint = 0..9007199254740991
 
-ErrorCode = ("invalid argument" /
+ErrorCode = "invalid argument" /
              "invalid session id" /
              "no such alert" /
              "no such frame" /
@@ -58,7 +58,7 @@ ErrorCode = ("invalid argument" /
              "unable to close browser" /
              "unknown command" /
              "unknown error" /
-             "unsupported operation")
+             "unsupported operation"
 
 SessionResult = (
    session.NewResult //
