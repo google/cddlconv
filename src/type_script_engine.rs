@@ -1,3 +1,5 @@
+use crate::util::split_namespaced;
+
 use super::util::is_alpha;
 use super::util::split_identifier;
 use super::util::to_namespaced;
@@ -39,13 +41,9 @@ impl<'a, 'b: 'a> TypeScriptEngine<'a> {
 
 impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
     fn visit_type_rule(&mut self, tr: &'b cddl::ast::TypeRule<'a>) -> cddl::visitor::Result<Error> {
-        let mut parts = split_identifier(&tr.name)
-            .into_iter()
-            .map(to_pascalcase)
-            .collect::<Vec<String>>();
-        let value = parts.pop().unwrap();
-        for part in &parts {
-            println!("export namespace {} {{", part);
+        let (namespaces, ident) = split_namespaced(&tr.name);
+        for namespace in &namespaces {
+            println!("export namespace {} {{", namespace);
         }
         if tr.value.type_choices.iter().all(|choice| {
             if let cddl::ast::Type2::TextValue { value, .. } = &choice.type1.type2 {
@@ -54,15 +52,15 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
                 false
             }
         }) {
-            print!("export const enum {} {{", value);
+            print!("export const enum {} {{", ident);
             self.visit_enum_type(&tr.value)?;
             println!("}}");
         } else {
-            print!("export type {} = ", value);
+            print!("export type {} = ", ident);
             self.visit_type(&tr.value)?;
             println!(";");
         }
-        for _ in &parts {
+        for _ in &namespaces {
             println!("}}");
         }
         Ok(())
@@ -80,20 +78,16 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
         &mut self,
         gr: &'b cddl::ast::GroupRule<'a>,
     ) -> cddl::visitor::Result<Error> {
-        let mut parts = split_identifier(&gr.name)
-            .into_iter()
-            .map(to_pascalcase)
-            .collect::<Vec<String>>();
-        let value = parts.pop().unwrap();
-        for part in &parts {
-            println!("export namespace {} {{", part);
+        let (namespaces, ident) = split_namespaced(&gr.name);
+        for namespace in &namespaces {
+            println!("export namespace {} {{", namespace);
         }
 
-        println!("export type {} = ", value);
+        println!("export type {} = ", ident);
         self.visit_group_entry(&gr.entry)?;
         println!(";");
 
-        for _ in &parts {
+        for _ in &namespaces {
             println!("}}");
         }
         Ok(())
