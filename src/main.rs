@@ -6,7 +6,6 @@ use cddl::visitor::Visitor;
 use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum EngineType {
     TypeScript,

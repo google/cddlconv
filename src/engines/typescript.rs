@@ -102,9 +102,12 @@ impl<'a, 'b: 'a> Engine {
             match op.operator {
                 cddl::ast::RangeCtlOp::RangeOp { is_inclusive, .. } => {
                     if !self.in_comment {
-                        println!("/**");
+                        print!("/*");
                         self.in_comment = true;
+                    } else {
+                        print!(" ");
                     }
+                    println!("*");
                     print!(" * Must be between `");
                     self.visit_type2(&t1.type2)?;
                     print!("` and `");
@@ -114,97 +117,115 @@ impl<'a, 'b: 'a> Engine {
                         print!(", inclusive");
                     }
                     println!(".");
-                    println!(" *");
                 }
                 cddl::ast::RangeCtlOp::CtlOp { ctrl, .. } => match ctrl {
                     cddl::token::ControlOperator::DEFAULT => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * @defaultValue `");
                         self.visit_type2(&op.type2)?;
                         println!("`");
                     }
                     cddl::token::ControlOperator::SIZE => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must be `");
                         self.visit_type2(&op.type2)?;
                         println!("` units in length.");
-                        println!(" *");
-                    },
+                    }
                     cddl::token::ControlOperator::PCRE | cddl::token::ControlOperator::REGEXP => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must match the pattern `");
                         self.visit_type2(&op.type2)?;
                         println!("`.");
-                        println!(" *");
                     }
                     cddl::token::ControlOperator::LT => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must be less than `");
                         self.visit_type2(&op.type2)?;
                         println!("`.");
-                        println!(" *");
                     }
                     cddl::token::ControlOperator::LE => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must be less than or equal to `");
                         self.visit_type2(&op.type2)?;
                         println!("`.");
-                        println!(" *");
                     }
                     cddl::token::ControlOperator::GT => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must be greater than `");
                         self.visit_type2(&op.type2)?;
                         println!("`.");
-                        println!(" *");
                     }
                     cddl::token::ControlOperator::GE => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must be greater than or equal to `");
                         self.visit_type2(&op.type2)?;
                         println!("`.");
-                        println!(" *");
                     }
                     cddl::token::ControlOperator::EQ => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must be equal to `");
                         self.visit_type2(&op.type2)?;
                         println!("`.");
-                        println!(" *");
                     }
                     cddl::token::ControlOperator::NE => {
                         if !self.in_comment {
-                            println!("/**");
+                            print!("/*");
                             self.in_comment = true;
+                        } else {
+                            print!(" ");
                         }
+                        println!("*");
                         print!(" * Must be not equal `");
                         self.visit_type2(&op.type2)?;
                         println!("`.");
-                        println!(" *");
                     }
                     _ => {}
                 },
