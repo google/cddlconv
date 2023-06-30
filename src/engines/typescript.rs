@@ -428,27 +428,29 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         mk: &'b cddl::ast::MemberKey<'a>,
     ) -> cddl::visitor::Result<Error> {
-        print!("[");
         match mk {
             cddl::ast::MemberKey::Type1 { t1, is_cut, .. } => {
+                print!("[");
                 if !is_cut {
                     print!("key: ");
                     self.visit_type1(t1)?;
                 } else {
                     self.visit_type1(t1)?;
                 }
+                print!("]");
             }
             cddl::ast::MemberKey::Bareword { ident, .. } => {
                 print!("\"{}\"", &ident);
             }
             cddl::ast::MemberKey::Value { value, .. } => {
+                print!("[");
                 self.visit_value(value)?;
+                print!("]");
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
-                todo!()
+                unimplemented!()
             }
         }
-        print!("]");
         Ok(())
     }
     fn visit_type1(&mut self, t1: &'b cddl::ast::Type1<'a>) -> cddl::visitor::Result<Error> {
