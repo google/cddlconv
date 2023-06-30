@@ -13,16 +13,14 @@ struct Type1Context {
     in_range: bool,
 }
 
-pub struct Engine<'a> {
-    occurence: Option<&'a cddl::ast::Occurrence<'a>>,
+pub struct Engine {
     nested_groups: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
 }
 
-impl<'a, 'b: 'a> Engine<'a> {
-    pub fn new() -> Engine<'a> {
+impl<'a, 'b: 'a> Engine {
+    pub fn new() -> Engine {
         Engine {
-            occurence: None,
             nested_groups: Vec::new(),
             nested_type1: Vec::new(),
         }
@@ -36,6 +34,35 @@ impl<'a, 'b: 'a> Engine<'a> {
                 panic!("Called `visit_enum_type` on non-textual type");
             }
         }
+        Ok(())
+    }
+    fn visit_memberkey_with_occurence(
+        &mut self,
+        mk: &'b cddl::ast::MemberKey<'a>,
+        occurence: Option<&'a cddl::ast::Occurrence<'a>>,
+    ) -> cddl::visitor::Result<Error> {
+        self.visit_memberkey(&mk)?;
+        if matches!(mk, cddl::ast::MemberKey::Type1 { is_cut: true, .. }) {
+            match occurence {
+                Some(cddl::ast::Occurrence {
+                    occur: cddl::ast::Occur::Optional { .. },
+                    ..
+                })
+                | Some(cddl::ast::Occurrence {
+                    occur: cddl::ast::Occur::ZeroOrMore { .. },
+                    ..
+                }) => print!("?"),
+                Some(cddl::ast::Occurrence {
+                    occur:
+                        cddl::ast::Occur::Exact {
+                            lower: Some(lower), ..
+                        },
+                    ..
+                }) if *lower == 0 => print!("?"),
+                _ => {}
+            }
+        }
+        print!(":");
         Ok(())
     }
     fn visit_array_group(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
@@ -115,7 +142,7 @@ impl<'a, 'b: 'a> Engine<'a> {
                 }
                 if let Some(mk) = &entry.member_key {
                     print!("  ");
-                    self.visit_memberkey(&mk)?;
+                    self.visit_memberkey_with_occurence(&mk, None)?;
                 }
                 self.visit_type(&entry.entry_type)?;
                 println!(",");
@@ -210,7 +237,7 @@ impl<'a, 'b: 'a> Engine<'a> {
     }
 }
 
-impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
+impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     fn visit_identifier(
         &mut self,
         ident: &cddl::ast::Identifier<'a>,
@@ -330,7 +357,6 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
         &mut self,
         entry: &'b cddl::ast::ValueMemberKeyEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.occurence = entry.occur.as_ref();
         if let Some(mk) = &entry.member_key {
             if let Some(group) = self.nested_groups.last_mut() {
                 if !group.in_object {
@@ -342,7 +368,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
                 }
             }
             print!("  ");
-            self.visit_memberkey(&mk)?;
+            self.visit_memberkey_with_occurence(&mk, entry.occur.as_ref())?;
             self.visit_type(&entry.entry_type)?;
             println!(",");
         } else {
@@ -402,49 +428,27 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine<'a> {
         &mut self,
         mk: &'b cddl::ast::MemberKey<'a>,
     ) -> cddl::visitor::Result<Error> {
+        print!("[");
         match mk {
             cddl::ast::MemberKey::Type1 { t1, is_cut, .. } => {
                 if !is_cut {
-                    print!("[key: ");
+                    print!("key: ");
                     self.visit_type1(t1)?;
-                    print!("]: ");
-                    return Ok(());
+                } else {
+                    self.visit_type1(t1)?;
                 }
-                print!("[");
-                self.visit_type1(t1)?;
             }
             cddl::ast::MemberKey::Bareword { ident, .. } => {
-                print!("[\"{}\"", &ident);
+                print!("\"{}\"", &ident);
             }
             cddl::ast::MemberKey::Value { value, .. } => {
-                println!("[");
                 self.visit_value(value)?;
             }
-            cddl::ast::MemberKey::NonMemberKey { non_member_key, .. } => {
-                println!("{:?}", non_member_key);
+            cddl::ast::MemberKey::NonMemberKey { .. } => {
+                todo!()
             }
         }
-        print!(
-            "]{}: ",
-            match self.occurence {
-                Some(cddl::ast::Occurrence {
-                    occur: cddl::ast::Occur::Optional { .. },
-                    ..
-                })
-                | Some(cddl::ast::Occurrence {
-                    occur: cddl::ast::Occur::ZeroOrMore { .. },
-                    ..
-                }) => "?",
-                Some(cddl::ast::Occurrence {
-                    occur:
-                        cddl::ast::Occur::Exact {
-                            lower: Some(lower), ..
-                        },
-                    ..
-                }) if *lower == 0 => "?",
-                _ => "",
-            }
-        );
+        print!("]");
         Ok(())
     }
     fn visit_type1(&mut self, t1: &'b cddl::ast::Type1<'a>) -> cddl::visitor::Result<Error> {
