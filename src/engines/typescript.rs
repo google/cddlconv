@@ -10,10 +10,11 @@ struct GroupChoiceContext {
 
 #[derive(Default)]
 struct Type1Context {
-    in_range: bool,
+    use_generic: bool,
 }
 
 pub struct Engine {
+    in_comment: bool,
     nested_groups: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
 }
@@ -21,6 +22,7 @@ pub struct Engine {
 impl<'a, 'b: 'a> Engine {
     pub fn new() -> Engine {
         Engine {
+            in_comment: false,
             nested_groups: Vec::new(),
             nested_type1: Vec::new(),
         }
@@ -63,6 +65,162 @@ impl<'a, 'b: 'a> Engine {
             }
         }
         print!(":");
+        Ok(())
+    }
+    fn visit_type_for_comment_inner(
+        &mut self,
+        t: &'b cddl::ast::Type<'a>,
+    ) -> cddl::visitor::Result<Error> {
+        for i in 0..t.type_choices.len() {
+            self.visit_type1_for_comment(&t.type_choices[i].type1)?;
+        }
+        Ok(())
+    }
+    fn visit_type_for_comment(
+        &mut self,
+        t: &'b cddl::ast::Type<'a>,
+    ) -> cddl::visitor::Result<Error> {
+        self.visit_type_for_comment_inner(&t)?;
+        if self.in_comment {
+            self.in_comment = false;
+            println!(" */");
+        }
+        Ok(())
+    }
+    fn visit_type1_for_comment(
+        &mut self,
+        t1: &'b cddl::ast::Type1<'a>,
+    ) -> cddl::visitor::Result<Error> {
+        self.nested_type1.push(Type1Context { use_generic: false });
+        match &t1.type2 {
+            cddl::ast::Type2::ParenthesizedType { pt, .. } => {
+                self.visit_type_for_comment_inner(&pt)?
+            }
+            _ => {}
+        }
+        if let Some(op) = &t1.operator {
+            match op.operator {
+                cddl::ast::RangeCtlOp::RangeOp { is_inclusive, .. } => {
+                    if !self.in_comment {
+                        println!("/**");
+                        self.in_comment = true;
+                    }
+                    print!(" * Must be between `");
+                    self.visit_type2(&t1.type2)?;
+                    print!("` and `");
+                    self.visit_type2(&op.type2)?;
+                    print!("`");
+                    if is_inclusive {
+                        print!(", inclusive");
+                    }
+                    println!(".");
+                    println!(" *");
+                }
+                cddl::ast::RangeCtlOp::CtlOp { ctrl, .. } => match ctrl {
+                    cddl::token::ControlOperator::DEFAULT => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * @defaultValue `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`");
+                    }
+                    cddl::token::ControlOperator::SIZE => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must be `");
+                        self.visit_type2(&op.type2)?;
+                        println!("` units in length.");
+                        println!(" *");
+                    },
+                    cddl::token::ControlOperator::PCRE | cddl::token::ControlOperator::REGEXP => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must match the pattern `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`.");
+                        println!(" *");
+                    }
+                    cddl::token::ControlOperator::LT => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must be less than `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`.");
+                        println!(" *");
+                    }
+                    cddl::token::ControlOperator::LE => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must be less than or equal to `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`.");
+                        println!(" *");
+                    }
+                    cddl::token::ControlOperator::GT => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must be greater than `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`.");
+                        println!(" *");
+                    }
+                    cddl::token::ControlOperator::GE => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must be greater than or equal to `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`.");
+                        println!(" *");
+                    }
+                    cddl::token::ControlOperator::EQ => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must be equal to `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`.");
+                        println!(" *");
+                    }
+                    cddl::token::ControlOperator::NE => {
+                        if !self.in_comment {
+                            println!("/**");
+                            self.in_comment = true;
+                        }
+                        print!(" * Must be not equal `");
+                        self.visit_type2(&op.type2)?;
+                        println!("`.");
+                        println!(" *");
+                    }
+                    _ => {}
+                },
+            }
+        }
+        self.nested_type1.pop();
+        Ok(())
+    }
+    fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
+        match value {
+            cddl::token::Value::INT(value) => print!("{}", value),
+            cddl::token::Value::UINT(value) => print!("{}", value),
+            cddl::token::Value::FLOAT(value) => print!("{}", value),
+            cddl::token::Value::TEXT(value) => print!("\"{}\"", value),
+            cddl::token::Value::BYTE(value) => print!("\"{}\"", value),
+        }
         Ok(())
     }
     fn visit_array_group(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
@@ -280,6 +438,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             self.visit_enum_type(&tr.value)?;
             println!("}}");
         } else {
+            self.visit_type_for_comment(&tr.value)?;
             print!("export type {} = ", type_name);
             self.visit_type(&tr.value)?;
             println!(";");
@@ -368,6 +527,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 }
             }
             print!("  ");
+            self.visit_type_for_comment(&entry.entry_type)?;
             self.visit_memberkey_with_occurence(&mk, entry.occur.as_ref())?;
             self.visit_type(&entry.entry_type)?;
             println!(",");
@@ -455,7 +615,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     }
     fn visit_type1(&mut self, t1: &'b cddl::ast::Type1<'a>) -> cddl::visitor::Result<Error> {
         self.nested_type1.push(Type1Context {
-            in_range: matches!(
+            use_generic: matches!(
                 t1.operator,
                 Some(cddl::ast::Operator {
                     operator: cddl::ast::RangeCtlOp::RangeOp { .. },
@@ -464,6 +624,19 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             ),
         });
         self.visit_type2(&t1.type2)?;
+        if let Some(cddl::ast::Operator {
+            operator:
+                cddl::ast::RangeCtlOp::CtlOp {
+                    ctrl: cddl::token::ControlOperator::WITHIN | cddl::token::ControlOperator::AND,
+                    ..
+                },
+            type2,
+            ..
+        }) = &t1.operator
+        {
+            println!(" & ");
+            self.visit_type2(&type2)?;
+        }
         self.nested_type1.pop();
         Ok(())
     }
@@ -485,7 +658,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     }
 
     fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
-        if self.nested_type1.last().unwrap().in_range {
+        if self.nested_type1.last().unwrap().use_generic {
             match value {
                 cddl::token::Value::INT(_)
                 | cddl::token::Value::UINT(_)
