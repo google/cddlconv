@@ -1,6 +1,6 @@
 use convert_case::{Case, Casing};
 
-pub fn split_identifier<T: ToString>(value: T) -> Vec<String> {
+fn split_identifier<T: ToString>(value: T) -> Vec<String> {
     return value.to_string().split('.').map(String::from).collect();
 }
 

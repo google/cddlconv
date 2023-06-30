@@ -1,10 +1,10 @@
 use crate::util::split_namespaced;
 
 use super::util::is_alpha;
-use super::util::split_identifier;
 use super::util::to_namespaced;
 use super::util::to_pascalcase;
 use cddl::ast::parent::Error;
+use cddl::ast::Operator;
 use cddl::visitor::walk_type2;
 use cddl::visitor::Visitor;
 
@@ -14,9 +14,15 @@ struct GroupChoiceContext {
     is_first: bool,
 }
 
+#[derive(Default)]
+struct Type1Context {
+    in_range: bool,
+}
+
 pub struct TypeScriptEngine<'a> {
     occurence: Option<&'a cddl::ast::Occurrence<'a>>,
     nested_groups: Vec<GroupChoiceContext>,
+    nested_type1: Vec<Type1Context>,
 }
 
 impl<'a, 'b: 'a> TypeScriptEngine<'a> {
@@ -24,6 +30,7 @@ impl<'a, 'b: 'a> TypeScriptEngine<'a> {
         TypeScriptEngine {
             occurence: None,
             nested_groups: Vec::new(),
+            nested_type1: Vec::new(),
         }
     }
     /// Requires all type choices to be strings.
@@ -40,8 +47,15 @@ impl<'a, 'b: 'a> TypeScriptEngine<'a> {
 }
 
 impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
+    fn visit_identifier(
+        &mut self,
+        ident: &cddl::ast::Identifier<'a>,
+    ) -> cddl::visitor::Result<Error> {
+        print!("{}", to_namespaced(ident.ident));
+        Ok(())
+    }
     fn visit_type_rule(&mut self, tr: &'b cddl::ast::TypeRule<'a>) -> cddl::visitor::Result<Error> {
-        let (namespaces, ident) = split_namespaced(&tr.name);
+        let (namespaces, type_name) = split_namespaced(&tr.name);
         for namespace in &namespaces {
             println!("export namespace {} {{", namespace);
         }
@@ -52,11 +66,11 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
                 false
             }
         }) {
-            print!("export const enum {} {{", ident);
+            print!("export const enum {} {{", type_name);
             self.visit_enum_type(&tr.value)?;
             println!("}}");
         } else {
-            print!("export type {} = ", ident);
+            print!("export type {} = ", type_name);
             self.visit_type(&tr.value)?;
             println!(";");
         }
@@ -66,24 +80,26 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
         Ok(())
     }
     fn visit_type(&mut self, t: &'b cddl::ast::Type<'a>) -> cddl::visitor::Result<Error> {
+        print!("(");
         for i in 0..t.type_choices.len() {
             if i != 0 {
                 print!("| ");
             }
             self.visit_type1(&t.type_choices[i].type1)?;
         }
+        print!(")");
         Ok(())
     }
     fn visit_group_rule(
         &mut self,
         gr: &'b cddl::ast::GroupRule<'a>,
     ) -> cddl::visitor::Result<Error> {
-        let (namespaces, ident) = split_namespaced(&gr.name);
+        let (namespaces, type_name) = split_namespaced(&gr.name);
         for namespace in &namespaces {
             println!("export namespace {} {{", namespace);
         }
 
-        println!("export type {} = ", ident);
+        println!("export type {} = ", type_name);
         self.visit_group_entry(&gr.entry)?;
         println!(";");
 
@@ -166,12 +182,14 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
         Ok(())
     }
     fn visit_group(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
+        print!("(");
         for i in 0..g.group_choices.len() {
             if i != 0 {
                 print!("| ");
             }
             self.visit_group_choice(&g.group_choices[i])?;
         }
+        print!(")");
         Ok(())
     }
     fn visit_value_member_key_entry(
@@ -211,8 +229,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
         &mut self,
         entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        println!("{}", to_namespaced(&entry.name));
-        Ok(())
+        self.visit_identifier(&entry.name)
     }
     fn visit_memberkey(
         &mut self,
@@ -266,15 +283,22 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
         Ok(())
     }
     fn visit_type1(&mut self, t1: &'b cddl::ast::Type1<'a>) -> cddl::visitor::Result<Error> {
-        self.visit_type2(&t1.type2)
+        self.nested_type1.push(Type1Context {
+            in_range: matches!(
+                t1.operator,
+                Some(Operator {
+                    operator: cddl::ast::RangeCtlOp::RangeOp { .. },
+                    ..
+                })
+            ),
+        });
+        self.visit_type2(&t1.type2)?;
+        self.nested_type1.pop();
+        Ok(())
     }
     fn visit_type2(&mut self, t2: &'b cddl::ast::Type2<'a>) -> cddl::visitor::Result<Error> {
         match t2 {
-            cddl::ast::Type2::Typename {
-                ident,
-                generic_args,
-                span,
-            } => match ident.ident {
+            cddl::ast::Type2::Typename { ident, .. } => match ident.ident {
                 "bool" => print!("boolean"),
                 "uint" | "nint" | "int" | "float16" | "float32" | "float64" | "float16-32"
                 | "float32-64" | "float" | "number" => {
@@ -292,29 +316,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
                 "regexp" => print!("RegExp"),
                 "false" => print!("false"),
                 "undefined" => print!("undefined"),
-                ident => print!("{}", to_namespaced(ident)),
+                _ => walk_type2(self, t2)?,
             },
-            cddl::ast::Type2::IntValue { .. }
-            | cddl::ast::Type2::UintValue { .. }
-            | cddl::ast::Type2::FloatValue { .. } => {
-                print!("number");
-            }
-            cddl::ast::Type2::TextValue { value, span } => {
-                print!("'{}'", value);
-            }
-            // cddl::ast::Type2::UTF8ByteString { value, span } => todo!(),
-            // cddl::ast::Type2::B16ByteString { value, span } => todo!(),
-            // cddl::ast::Type2::B64ByteString { value, span } => todo!(),
             // cddl::ast::Type2::ParenthesizedType { pt, span, comments_before_type, comments_after_type } => todo!(),
             // cddl::ast::Type2::Map { group, span, comments_before_group, comments_after_group } => todo!(),
-            cddl::ast::Type2::Array {
-                group,
-                span,
-                comments_before_group,
-                comments_after_group,
-            } => {
+            cddl::ast::Type2::Array { .. } => {
                 print!("Array<");
-                self.visit_group(&group)?;
+                walk_type2(self, t2)?;
                 print!(">");
             }
             // cddl::ast::Type2::Unwrap { ident, generic_args, span, comments } => todo!(),
@@ -325,6 +333,26 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for TypeScriptEngine<'a> {
             // cddl::ast::Type2::Any { span } => todo!(),
             t2 => {
                 walk_type2(self, t2)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
+        if self.nested_type1.last().unwrap().in_range {
+            match value {
+                cddl::token::Value::INT(_)
+                | cddl::token::Value::UINT(_)
+                | cddl::token::Value::FLOAT(_) => print!("number"),
+                cddl::token::Value::TEXT(_) | cddl::token::Value::BYTE(_) => print!("string"),
+            }
+        } else {
+            match value {
+                cddl::token::Value::INT(value) => print!("{}", value),
+                cddl::token::Value::UINT(value) => print!("{}", value),
+                cddl::token::Value::FLOAT(value) => print!("{}", value),
+                cddl::token::Value::TEXT(value) => print!("\"{}\"", value),
+                cddl::token::Value::BYTE(value) => print!("\"{}\"", value),
             }
         }
         Ok(())
