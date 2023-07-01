@@ -277,7 +277,7 @@ impl<'a, 'b: 'a> Engine {
             }
         }
     }
-    fn enter_object(&mut self) {
+    fn enter_map(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_object {
                 println!("{{");
@@ -285,7 +285,7 @@ impl<'a, 'b: 'a> Engine {
             }
         }
     }
-    fn exit_object(&mut self) {
+    fn exit_map(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
@@ -311,9 +311,11 @@ impl<'a, 'b: 'a> Engine {
                 }
             }
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
-                self.exit_array();
                 self.print_group_joiner();
+                self.enter_array();
+                print!("...(");
                 self.visit_array(&group)?;
+                print!(")");
             }
         }
         Ok(())
@@ -509,20 +511,34 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             println!("export namespace {} {{", namespace);
         }
 
+        let choice = cddl::ast::GroupChoice {
+            group_entries: vec![(
+                gr.entry.clone(),
+                cddl::ast::OptionalComma {
+                    optional_comma: false,
+                    trailing_comments: None,
+                    _a: std::marker::PhantomData,
+                },
+            )],
+            span: Default::default(),
+            comments_before_grpchoice: None,
+        };
+
         // Group rules are objects that behave depending on their context.
         // Specifically, if a group rule is composed inside a map or an array,
         // it behaves as though it is a map or an array respectively.
         //
         // This requires us to build to types in case of usage: one for use as a
         // map and the other for use as an array.
-
         println!("export type {} = ", type_name);
-        self.visit_group_entry(&gr.entry)?;
+        self.visit_group_choice(&choice)?;
         println!(";");
 
-        println!("export type {}Vector = ", type_name);
-        self.visit_array_entry(&gr.entry)?;
-        println!(";");
+        {
+            println!("export type {}Vector = ", type_name);
+            self.visit_array_choice(&choice)?;
+            println!(";");
+        }
 
         for _ in &namespaces {
             println!("}}");
@@ -552,7 +568,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 }
             }
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
-                self.exit_object();
+                self.exit_map();
                 self.print_group_joiner();
                 self.visit_group(group)?;
             }
@@ -566,14 +582,14 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                self.exit_object();
+                self.exit_map();
                 self.print_group_joiner();
                 self.visit_type(&entry.entry_type)?;
                 return Ok(());
             }
         };
         self.print_group_joiner();
-        self.enter_object();
+        self.enter_map();
         print!("  ");
         self.visit_type_for_comment(&entry.entry_type)?;
         self.visit_memberkey(&mk)?;
@@ -588,7 +604,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.exit_object();
+        self.exit_map();
         self.print_group_joiner();
         if is_group_entry_occurence_optional(&entry.occur) {
             print!("Partial<");
@@ -619,13 +635,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             is_first: true,
         });
         if gc.group_entries.is_empty() {
-            self.enter_object();
+            self.enter_map();
         }
         for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
             self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
             self.visit_group_entry(entry)?;
         }
-        self.exit_object();
+        self.exit_map();
         self.nested_group_choices.pop();
         Ok(())
     }
