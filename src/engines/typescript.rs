@@ -15,7 +15,7 @@ struct Type1Context {
 
 pub struct Engine {
     in_comment: bool,
-    nested_groups: Vec<GroupChoiceContext>,
+    nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
 }
 
@@ -23,7 +23,7 @@ impl<'a, 'b: 'a> Engine {
     pub fn new() -> Engine {
         Engine {
             in_comment: false,
-            nested_groups: Vec::new(),
+            nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
         }
     }
@@ -257,22 +257,22 @@ impl<'a, 'b: 'a> Engine {
         &mut self,
         gc: &'b cddl::ast::GroupChoice<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.nested_groups.push(Default::default());
+        self.nested_group_choices.push(Default::default());
         if gc.group_entries.is_empty() {
-            let group = self.nested_groups.last_mut().unwrap();
+            let group = self.nested_group_choices.last_mut().unwrap();
             group.in_object = true;
             print!("[");
         }
         for i in 0..gc.group_entries.len() {
-            self.nested_groups.last_mut().unwrap().is_first = i == 0;
+            self.nested_group_choices.last_mut().unwrap().is_first = i == 0;
             self.visit_array_group_entry(&gc.group_entries[i].0)?;
         }
-        let group = self.nested_groups.last_mut().unwrap();
+        let group = self.nested_group_choices.last_mut().unwrap();
         if group.in_object {
             group.in_object = false;
             print!("] ");
         }
-        self.nested_groups.pop();
+        self.nested_group_choices.pop();
         Ok(())
     }
     fn visit_array_group_entry(
@@ -287,7 +287,7 @@ impl<'a, 'b: 'a> Engine {
                 self.visit_array_type_groupname_entry(ge)?;
             }
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
-                if let Some(group) = self.nested_groups.last_mut() {
+                if let Some(group) = self.nested_group_choices.last_mut() {
                     if group.in_object {
                         group.in_object = false;
                         print!("] ");
@@ -310,7 +310,7 @@ impl<'a, 'b: 'a> Engine {
                 self.visit_array_occurence_with(&entry.occur, Self::visit_type, &entry.entry_type)?;
             }
             None => {
-                if let Some(group) = self.nested_groups.last_mut() {
+                if let Some(group) = self.nested_group_choices.last_mut() {
                     if !group.in_object {
                         if !group.is_first {
                             print!("& ");
@@ -362,7 +362,7 @@ impl<'a, 'b: 'a> Engine {
                 }
             }
         } else {
-            if let Some(group) = self.nested_groups.last_mut() {
+            if let Some(group) = self.nested_group_choices.last_mut() {
                 if !group.in_object {
                     if !group.is_first {
                         print!("& ");
@@ -375,7 +375,7 @@ impl<'a, 'b: 'a> Engine {
             print!(",");
             return Ok(());
         }
-        if let Some(group) = self.nested_groups.last_mut() {
+        if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
                 print!("] ");
@@ -507,7 +507,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 self.visit_value_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
-                if let Some(group) = self.nested_groups.last_mut() {
+                if let Some(group) = self.nested_group_choices.last_mut() {
                     if group.in_object {
                         group.in_object = false;
                         print!("}} ");
@@ -519,7 +519,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 self.visit_type_groupname_entry(ge)?;
             }
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
-                if let Some(group) = self.nested_groups.last_mut() {
+                if let Some(group) = self.nested_group_choices.last_mut() {
                     if group.in_object {
                         group.in_object = false;
                         print!("}} ");
@@ -538,7 +538,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         entry: &'b cddl::ast::ValueMemberKeyEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
         if let Some(mk) = &entry.member_key {
-            if let Some(group) = self.nested_groups.last_mut() {
+            if let Some(group) = self.nested_group_choices.last_mut() {
                 if !group.in_object {
                     if !group.is_first {
                         print!("& ");
@@ -553,7 +553,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             self.visit_type(&entry.entry_type)?;
             println!(",");
         } else {
-            if let Some(group) = self.nested_groups.last_mut() {
+            if let Some(group) = self.nested_group_choices.last_mut() {
                 if group.in_object {
                     group.in_object = false;
                     print!("}} ");
@@ -587,22 +587,22 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         gc: &'b cddl::ast::GroupChoice<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.nested_groups.push(Default::default());
+        self.nested_group_choices.push(Default::default());
         if gc.group_entries.is_empty() {
-            let group = self.nested_groups.last_mut().unwrap();
+            let group = self.nested_group_choices.last_mut().unwrap();
             group.in_object = true;
             print!("{{");
         }
         for i in 0..gc.group_entries.len() {
-            self.nested_groups.last_mut().unwrap().is_first = i == 0;
+            self.nested_group_choices.last_mut().unwrap().is_first = i == 0;
             self.visit_group_entry(&gc.group_entries[i].0)?;
         }
-        let group = self.nested_groups.last_mut().unwrap();
+        let group = self.nested_group_choices.last_mut().unwrap();
         if group.in_object {
             group.in_object = false;
             print!("}} ");
         }
-        self.nested_groups.pop();
+        self.nested_group_choices.pop();
         Ok(())
     }
     fn visit_memberkey(
