@@ -593,11 +593,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         print!("  ");
         self.visit_type_for_comment(&entry.entry_type)?;
         self.visit_memberkey(&mk)?;
+        if is_group_entry_occurence_optional(&entry.occur)
+            && !matches!(&mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. })
+        {
+            print!("?");
+        }
         print!(":");
         self.visit_type(&entry.entry_type)?;
-        if is_group_entry_occurence_optional(&entry.occur) {
-            print!("|undefined");
-        }
         Ok(())
     }
     fn visit_type_groupname_entry(
