@@ -2,13 +2,11 @@ use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{is_alpha, split_namespaced, to_namespaced, to_pascalcase};
 
-#[derive(Default)]
 struct GroupChoiceContext {
     in_object: bool,
     is_first: bool,
 }
 
-#[derive(Default)]
 struct Type1Context {
     use_generic: bool,
 }
@@ -257,7 +255,10 @@ impl<'a, 'b: 'a> Engine {
         &mut self,
         gc: &'b cddl::ast::GroupChoice<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.nested_group_choices.push(Default::default());
+        self.nested_group_choices.push(GroupChoiceContext {
+            in_object: false,
+            is_first: false,
+        });
         if gc.group_entries.is_empty() {
             let group = self.nested_group_choices.last_mut().unwrap();
             group.in_object = true;
@@ -587,7 +588,10 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         gc: &'b cddl::ast::GroupChoice<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.nested_group_choices.push(Default::default());
+        self.nested_group_choices.push(GroupChoiceContext {
+            in_object: false,
+            is_first: false,
+        });
         if gc.group_entries.is_empty() {
             let group = self.nested_group_choices.last_mut().unwrap();
             group.in_object = true;
