@@ -25,10 +25,18 @@ pub fn split_namespaced<T: ToString>(value: T) -> (Vec<String>, String) {
     (parts, value)
 }
 
-pub fn is_alpha<T: AsRef<str>>(value: T) -> bool {
+pub fn is_alphaspace<T: AsRef<str>>(value: T) -> bool {
     value
         .as_ref()
         .to_ascii_lowercase()
         .bytes()
         .all(|ch| b'a' <= ch && ch <= b'z' || ch == b' ')
+}
+
+pub fn is_alpha<T: AsRef<str>>(value: T) -> bool {
+    value
+        .as_ref()
+        .to_ascii_lowercase()
+        .bytes()
+        .all(|ch| b'a' <= ch && ch <= b'z')
 }

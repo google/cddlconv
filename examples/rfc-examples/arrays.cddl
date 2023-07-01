@@ -1,4 +1,7 @@
 equipment-type = [name: tstr, manufacturer: tstr]
+equipment-type-2 = [tstr .default "hello", tstr]
+equipment-type-3 = [? tstr, tstr]
+equipment-type-4 = [0*1 tstr, tstr]
 equipment-tolerances = [+ [float, float]]
 
 person = (
