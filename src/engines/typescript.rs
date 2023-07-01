@@ -1,14 +1,10 @@
 use std::collections::HashSet;
 
-use cddl::{
-    ast::{Identifier, Occurrence},
-    visitor::Visitor,
-    Error,
-};
+use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
-use crate::util::{is_alpha, is_alphaspace, split_namespaced, to_namespaced, to_pascalcase};
+use crate::util::{is_alphaspace, split_namespaced, to_namespaced, to_pascalcase};
 
-const MAX_ARRAYS: usize = 1 << 4;
+const MAX_ARRAYS: usize = 1 << 3;
 
 struct GroupChoiceContext {
     in_object: bool,
@@ -76,6 +72,13 @@ impl<'a, 'b: 'a> Engine {
             nested_type1: Vec::new(),
             group_names: HashSet::new(),
         }
+    }
+    pub fn print_preamble() {
+        print!(
+            "export type Flatten<T extends unknown[]> = T extends (infer S)[][]
+        ? S[]
+        : never;"
+        )
     }
     /// Requires all type choices to be strings.
     fn visit_enum_type(&mut self, t: &'b cddl::ast::Type<'a>) -> cddl::visitor::Result<Error> {
@@ -325,74 +328,107 @@ impl<'a, 'b: 'a> Engine {
                 mk
             );
         }
-        if entry.occur.is_some() {
-            return self.visit_array_occurence_with(
-                &entry.occur,
-                Self::visit_type,
-                &entry.entry_type,
-            );
-        }
         self.print_group_joiner();
         self.enter_array();
         self.visit_type_for_comment(&entry.entry_type)?;
-        self.visit_type(&entry.entry_type)?;
-        Ok(())
-    }
-    fn visit_type_arrayname_entry(
-        &mut self,
-        entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
-    ) -> cddl::visitor::Result<Error> {
-        self.visit_array_occurence_with(&entry.occur, Self::visit_identifier, &entry.name)
-    }
-
-    fn visit_array_occurence_with<T, F: Fn(&mut Self, &'b T) -> cddl::visitor::Result<Error>>(
-        &mut self,
-        occurence: &Option<Occurrence<'_>>,
-        func: F,
-        value: &'b T,
-    ) -> cddl::visitor::Result<Error> {
-        if let Some(Occurrence { occur, .. }) = occurence {
-            let (lower, upper) = {
-                match occur {
+        match {
+            match &entry.occur {
+                Some(Occurrence { occur, .. }) => match occur {
                     cddl::ast::Occur::ZeroOrMore { .. } => (0, usize::MAX),
                     cddl::ast::Occur::Exact { lower, upper, .. } => {
                         (lower.unwrap_or(0), upper.unwrap_or(usize::MAX))
                     }
                     cddl::ast::Occur::OneOrMore { .. } => (1, usize::MAX),
                     cddl::ast::Occur::Optional { .. } => (0, 1),
-                }
-            };
-            self.exit_array();
-            self.print_group_joiner();
-            if upper - lower < MAX_ARRAYS {
-                for bound in lower..upper + 1 {
-                    if bound != lower {
-                        print!("|");
-                    }
-                    print!("[");
-                    for _ in 0..bound {
-                        func(self, value)?;
-                        print!(",");
-                    }
-                    print!("]");
-                }
-            } else {
-                if lower > 0 {
-                    let bound = lower;
-                    print!("[");
-                    for _ in 0..bound {
-                        func(self, value)?;
-                        print!(",");
-                    }
-                    print!("] & ");
-                }
-                func(self, value)?;
-                print!("[]");
+                },
+                _ => (1, 1),
             }
-        } else {
-            self.print_group_joiner();
-            self.enter_array();
-            func(self, value)?;
+        } {
+            (lower, upper) if lower == upper => {
+                for index in 0..lower {
+                    if index != 0 {
+                        print!(",");
+                    }
+                    self.visit_type(&entry.entry_type)?
+                }
+            }
+            (lower, upper) => {
+                print!("...(");
+                if upper < MAX_ARRAYS {
+                    for bound in lower..upper + 1 {
+                        if bound != 0 {
+                            print!("|");
+                        }
+                        print!("[");
+                        for _ in 0..bound {
+                            self.visit_type(&entry.entry_type)?;
+                            print!(",");
+                        }
+                        print!("]");
+                    }
+                } else {
+                    self.visit_type(&entry.entry_type)?;
+                    print!("[]");
+                }
+                print!(")");
+            }
+        }
+        Ok(())
+    }
+    fn visit_type_arrayname_entry(
+        &mut self,
+        entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
+    ) -> cddl::visitor::Result<Error> {
+        self.print_group_joiner();
+        self.enter_array();
+        match {
+            match &entry.occur {
+                Some(Occurrence { occur, .. }) => match occur {
+                    cddl::ast::Occur::ZeroOrMore { .. } => (0, usize::MAX),
+                    cddl::ast::Occur::Exact { lower, upper, .. } => {
+                        (lower.unwrap_or(0), upper.unwrap_or(usize::MAX))
+                    }
+                    cddl::ast::Occur::OneOrMore { .. } => (1, usize::MAX),
+                    cddl::ast::Occur::Optional { .. } => (0, 1),
+                },
+                _ => (1, 1),
+            }
+        } {
+            (lower, upper) if lower == upper => {
+                for index in 0..lower {
+                    if index != 0 {
+                        print!(",");
+                    }
+                    print!("...");
+                    self.visit_identifier(&entry.name)?;
+                    print!("Vector");
+                }
+            }
+            (lower, upper) => {
+                print!("...(");
+                if upper < MAX_ARRAYS {
+                    for bound in lower..upper + 1 {
+                        if bound != 0 {
+                            print!("|");
+                        }
+                        print!("[");
+                        for _ in 0..bound {
+                            print!("...");
+                            self.visit_identifier(&entry.name)?;
+                            print!("Vector");
+                            print!(",");
+                        }
+                        print!("]");
+                    }
+                } else {
+                    print!("Flatten<");
+                    self.visit_identifier(&entry.name)?;
+                    print!("Vector");
+                    print!("[]");
+                    print!(">");
+                }
+                print!(")");
+            }
         }
         Ok(())
     }
@@ -473,8 +509,19 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             println!("export namespace {} {{", namespace);
         }
 
+        // Group rules are objects that behave depending on their context.
+        // Specifically, if a group rule is composed inside a map or an array,
+        // it behaves as though it is a map or an array respectively.
+        //
+        // This requires us to build to types in case of usage: one for use as a
+        // map and the other for use as an array.
+
         println!("export type {} = ", type_name);
         self.visit_group_entry(&gr.entry)?;
+        println!(";");
+
+        println!("export type {}Vector = ", type_name);
+        self.visit_array_entry(&gr.entry)?;
         println!(";");
 
         for _ in &namespaces {
@@ -519,10 +566,9 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                eprintln!(
-                    "A member key is required for maps. Skipping this key: {:?}",
-                    entry
-                );
+                self.exit_object();
+                self.print_group_joiner();
+                self.visit_type(&entry.entry_type)?;
                 return Ok(());
             }
         };
@@ -531,11 +577,11 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         print!("  ");
         self.visit_type_for_comment(&entry.entry_type)?;
         self.visit_memberkey(&mk)?;
-        if is_group_entry_occurence_optional(&entry.occur) {
-            print!("?");
-        }
         print!(":");
         self.visit_type(&entry.entry_type)?;
+        if is_group_entry_occurence_optional(&entry.occur) {
+            print!("|undefined");
+        }
         Ok(())
     }
     fn visit_type_groupname_entry(
