@@ -55,11 +55,13 @@ impl<'a, 'b: 'a, 'c> Engine {
         }
     }
     pub fn print_preamble() {
-        print!(
-            "export type Flatten<T extends unknown[]> = T extends (infer S)[][]
-        ? S[]
-        : never;"
-        )
+        if cfg!(feature = "vector_groups") {
+            print!(
+                "export type Flatten<T extends unknown[]> = T extends (infer S)[][] \
+                    ? S[] \
+                    : never;"
+            )
+        }
     }
     /// Requires all type choices to be strings.
     fn visit_enum_type(&mut self, t: &'b cddl::ast::Type<'a>) -> cddl::visitor::Result<Error> {
@@ -536,13 +538,12 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                eprintln!(
+                return Err(Error::CDDL(format!(
                     "Expected key for value of type {} since this is a map. \
-                    Did you mean to use `typename = (type1 / type2)` \
-                    instead of `typename = (type 1 // type2)`? Ignoring entry: {}",
-                    entry.entry_type, entry
-                );
-                return Ok(());
+                    Did you mean to declare {} with parenthesis (`( .. )`) \
+                    instead of brackets (`{{ .. }}`)?",
+                    entry.entry_type, entry.entry_type
+                )));
             }
         };
         self.print_group_joiner();
