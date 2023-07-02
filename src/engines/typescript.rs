@@ -19,14 +19,11 @@ pub struct Engine {
     in_comment: bool,
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
-    // We need to keep track of groups because we use this to differentiate
-    // group entries. (Yes, it's kind of horrible that the spec doesn't
-    // distinguish this intrinsically).
-    group_names: HashSet<String>,
+    groupnames: HashSet<String>,
 }
 
-fn type_groupname_entry_to_value_member_key_entry<'a>(
-    entry: &'a cddl::ast::TypeGroupnameEntry,
+fn type_groupname_entry_to_value_member_key_entry<'a, 'b: 'a>(
+    entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
 ) -> cddl::ast::ValueMemberKeyEntry<'a> {
     cddl::ast::ValueMemberKeyEntry {
         occur: entry.occur.clone(),
@@ -64,13 +61,27 @@ fn is_group_entry_occurence_optional(occur: &Option<cddl::ast::Occurrence<'_>>) 
     }
 }
 
-impl<'a, 'b: 'a> Engine {
+fn calculate_array_entry_occurence(occur: &Option<cddl::ast::Occurrence<'_>>) -> (usize, usize) {
+    match &occur {
+        Some(Occurrence { occur, .. }) => match occur {
+            cddl::ast::Occur::ZeroOrMore { .. } => (0, usize::MAX),
+            cddl::ast::Occur::Exact { lower, upper, .. } => {
+                (lower.unwrap_or(0), upper.unwrap_or(usize::MAX))
+            }
+            cddl::ast::Occur::OneOrMore { .. } => (1, usize::MAX),
+            cddl::ast::Occur::Optional { .. } => (0, 1),
+        },
+        _ => (1, 1),
+    }
+}
+
+impl<'a, 'b: 'a, 'c> Engine {
     pub fn new() -> Engine {
         Engine {
             in_comment: false,
             nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
-            group_names: HashSet::new(),
+            groupnames: HashSet::new(),
         }
     }
     pub fn print_preamble() {
@@ -302,13 +313,7 @@ impl<'a, 'b: 'a> Engine {
                 self.visit_value_array_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
-                if !self.group_names.contains(ge.name.ident) {
-                    self.visit_value_array_member_key_entry(
-                        &type_groupname_entry_to_value_member_key_entry(ge),
-                    )?;
-                } else {
-                    self.visit_type_arrayname_entry(ge)?;
-                }
+                self.visit_type_arrayname_entry(ge)?;
             }
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
                 self.print_group_joiner();
@@ -325,27 +330,12 @@ impl<'a, 'b: 'a> Engine {
         entry: &'b cddl::ast::ValueMemberKeyEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
         if let Some(mk) = &entry.member_key {
-            eprintln!(
-                "Member keys are not supported for arrays. Ignoring member key: {:?}",
-                mk
-            );
+            eprintln!("Keys are not supported for arrays. Ignoring key: {}", mk);
         }
         self.print_group_joiner();
         self.enter_array();
         self.visit_type_for_comment(&entry.entry_type)?;
-        match {
-            match &entry.occur {
-                Some(Occurrence { occur, .. }) => match occur {
-                    cddl::ast::Occur::ZeroOrMore { .. } => (0, usize::MAX),
-                    cddl::ast::Occur::Exact { lower, upper, .. } => {
-                        (lower.unwrap_or(0), upper.unwrap_or(usize::MAX))
-                    }
-                    cddl::ast::Occur::OneOrMore { .. } => (1, usize::MAX),
-                    cddl::ast::Occur::Optional { .. } => (0, 1),
-                },
-                _ => (1, 1),
-            }
-        } {
+        match calculate_array_entry_occurence(&entry.occur) {
             (lower, upper) if lower == upper => {
                 for index in 0..lower {
                     if index != 0 {
@@ -381,29 +371,27 @@ impl<'a, 'b: 'a> Engine {
         &mut self,
         entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
+        if !self.groupnames.contains(entry.name.ident) {
+            let entry = type_groupname_entry_to_value_member_key_entry(entry);
+            return self.visit_value_array_member_key_entry(&entry);
+        }
         self.print_group_joiner();
         self.enter_array();
-        match {
-            match &entry.occur {
-                Some(Occurrence { occur, .. }) => match occur {
-                    cddl::ast::Occur::ZeroOrMore { .. } => (0, usize::MAX),
-                    cddl::ast::Occur::Exact { lower, upper, .. } => {
-                        (lower.unwrap_or(0), upper.unwrap_or(usize::MAX))
-                    }
-                    cddl::ast::Occur::OneOrMore { .. } => (1, usize::MAX),
-                    cddl::ast::Occur::Optional { .. } => (0, 1),
-                },
-                _ => (1, 1),
-            }
-        } {
+        match calculate_array_entry_occurence(&entry.occur) {
             (lower, upper) if lower == upper => {
                 for index in 0..lower {
                     if index != 0 {
                         print!(",");
                     }
-                    print!("...");
-                    self.visit_identifier(&entry.name)?;
-                    print!("Vector");
+                    if cfg!(feature = "vector_groups") {
+                        print!("...");
+                        self.visit_identifier(&entry.name)?;
+                        print!("Vector");
+                    } else {
+                        print!("(");
+                        self.visit_identifier(&entry.name)?;
+                        print!(")");
+                    }
                 }
             }
             (lower, upper) => {
@@ -415,19 +403,32 @@ impl<'a, 'b: 'a> Engine {
                         }
                         print!("[");
                         for _ in 0..bound {
-                            print!("...");
-                            self.visit_identifier(&entry.name)?;
-                            print!("Vector");
+                            if cfg!(feature = "vector_groups") {
+                                print!("...");
+                                self.visit_identifier(&entry.name)?;
+                                print!("Vector");
+                            } else {
+                                print!("(");
+                                self.visit_identifier(&entry.name)?;
+                                print!(")");
+                            }
                             print!(",");
                         }
                         print!("]");
                     }
                 } else {
-                    print!("Flatten<");
-                    self.visit_identifier(&entry.name)?;
-                    print!("Vector");
-                    print!("[]");
-                    print!(">");
+                    if cfg!(feature = "vector_groups") {
+                        print!("Flatten<");
+                        self.visit_identifier(&entry.name)?;
+                        print!("Vector");
+                        print!("[]");
+                        print!(">");
+                    } else {
+                        print!("(");
+                        self.visit_identifier(&entry.name)?;
+                        print!(")");
+                        print!("[]");
+                    }
                 }
                 print!(")");
             }
@@ -504,7 +505,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         gr: &'b cddl::ast::GroupRule<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.group_names.insert(gr.name.ident.to_string());
+        self.groupnames.insert(gr.name.ident.to_string());
 
         let (namespaces, type_name) = split_namespaced(&gr.name);
         for namespace in &namespaces {
@@ -534,7 +535,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         self.visit_group_choice(&choice)?;
         println!(";");
 
-        {
+        if cfg!(feature = "vector_groups") {
             println!("export type {}Vector = ", type_name);
             self.visit_array_choice(&choice)?;
             println!(";");
@@ -551,21 +552,10 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     ) -> cddl::visitor::Result<Error> {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
-                // Note we should check if the entry contains a groupname
-                // instead of a typename (similar to the logic for groupname).
-                // This is required because the parser has no way of
-                // distinguishing them, however by default, the parser will use
-                // groupname instead of typename, so this branch is safe.
                 self.visit_value_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
-                if !self.group_names.contains(ge.name.ident) {
-                    self.visit_value_member_key_entry(
-                        &type_groupname_entry_to_value_member_key_entry(ge),
-                    )?;
-                } else {
-                    self.visit_type_groupname_entry(ge)?;
-                }
+                self.visit_type_groupname_entry(ge)?;
             }
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
                 self.exit_map();
@@ -582,9 +572,19 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                self.exit_map();
-                self.print_group_joiner();
-                self.visit_type(&entry.entry_type)?;
+                if let Some((ident, ..)) = entry.entry_type.groupname_entry() {
+                    return self.visit_type_groupname_entry(&cddl::ast::TypeGroupnameEntry {
+                        occur: entry.occur.clone(),
+                        name: ident,
+                        generic_args: None,
+                    });
+                }
+                eprintln!(
+                    "Expected key for value of type {} since this is a map. \
+                    Did you mean to use `typename = (type1 / type2)` \
+                    instead of `typename = (type 1 // type2)`? Ignoring entry: {}",
+                    entry.entry_type, entry
+                );
                 return Ok(());
             }
         };

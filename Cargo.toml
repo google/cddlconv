@@ -5,6 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+# Enables generation of vector groups.
+vector_groups = []
+
 [dependencies]
 anyhow = "1.0.71"
 cddl = "0.9.1"
