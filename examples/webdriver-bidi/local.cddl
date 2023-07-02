@@ -258,13 +258,13 @@ NetworkEvent = (
 )
 
 
-network.BaseParameters = {
+network.BaseParameters = (
     context: browsingContext.BrowsingContext / null,
     navigation: browsingContext.Navigation / null,
     redirectCount: js-uint,
     request: network.RequestData,
     timestamp: js-uint,
-}
+)
 
 network.Cookie = {
     name: text,
@@ -439,10 +439,10 @@ script.ArrayLocalValue = {
   value: script.ListLocalValue,
 }
 
-script.DateLocalValue = {
+script.DateLocalValue = (
   type: "date",
   value: text
-}
+)
 
 script.MappingLocalValue = [*[(script.LocalValue / text), script.LocalValue]];
 
@@ -461,10 +461,10 @@ script.RegExpValue = {
   ? flags: text,
 }
 
-script.RegExpLocalValue = {
+script.RegExpLocalValue = (
   type: "regexp",
   value: script.RegExpValue,
-}
+)
 
 script.SetLocalValue = {
   type: "set",
@@ -525,10 +525,10 @@ script.RealmInfo = (
   script.WorkletRealmInfo
 )
 
-script.BaseRealmInfo = {
+script.BaseRealmInfo = (
   realm: script.Realm,
   origin: text
-}
+)
 
 script.WindowRealmInfo = {
   script.BaseRealmInfo,
@@ -632,11 +632,11 @@ script.FunctionRemoteValue = {
   ? internalId: script.InternalId,
 }
 
-script.RegExpRemoteValue = {
+script.RegExpRemoteValue = (
   script.RegExpLocalValue,
   ? handle: script.Handle,
   ? internalId: script.InternalId,
-}
+)
 
 script.DateRemoteValue = {
   script.DateLocalValue,
@@ -818,13 +818,13 @@ log.Entry = (
   log.JavascriptLogEntry
 )
 
-log.BaseLogEntry = {
+log.BaseLogEntry = (
   level: log.Level,
   source: script.Source,
   text: text / null,
   timestamp: js-uint,
   ? stackTrace: script.StackTrace,
-}
+)
 
 log.GenericLogEntry = {
   log.BaseLogEntry,

@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{is_alphaspace, split_namespaced, to_namespaced, to_pascalcase};
@@ -19,33 +17,6 @@ pub struct Engine {
     in_comment: bool,
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
-    groupnames: HashSet<String>,
-}
-
-fn type_groupname_entry_to_value_member_key_entry<'a, 'b: 'a>(
-    entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
-) -> cddl::ast::ValueMemberKeyEntry<'a> {
-    cddl::ast::ValueMemberKeyEntry {
-        occur: entry.occur.clone(),
-        member_key: None,
-        entry_type: cddl::ast::Type {
-            type_choices: vec![cddl::ast::TypeChoice {
-                type1: cddl::ast::Type1 {
-                    type2: cddl::ast::Type2::Typename {
-                        ident: entry.name.clone(),
-                        generic_args: entry.generic_args.clone(),
-                        span: Default::default(),
-                    },
-                    operator: None,
-                    span: Default::default(),
-                    comments_after_type: None,
-                },
-                comments_before_type: None,
-                comments_after_type: None,
-            }],
-            span: Default::default(),
-        },
-    }
 }
 
 fn is_group_entry_occurence_optional(occur: &Option<cddl::ast::Occurrence<'_>>) -> bool {
@@ -81,7 +52,6 @@ impl<'a, 'b: 'a, 'c> Engine {
             in_comment: false,
             nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
-            groupnames: HashSet::new(),
         }
     }
     pub fn print_preamble() {
@@ -371,10 +341,6 @@ impl<'a, 'b: 'a, 'c> Engine {
         &mut self,
         entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        if !self.groupnames.contains(entry.name.ident) {
-            let entry = type_groupname_entry_to_value_member_key_entry(entry);
-            return self.visit_value_array_member_key_entry(&entry);
-        }
         self.print_group_joiner();
         self.enter_array();
         match calculate_array_entry_occurence(&entry.occur) {
@@ -505,8 +471,6 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         gr: &'b cddl::ast::GroupRule<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.groupnames.insert(gr.name.ident.to_string());
-
         let (namespaces, type_name) = split_namespaced(&gr.name);
         for namespace in &namespaces {
             println!("export namespace {} {{", namespace);
@@ -572,13 +536,6 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                if let Some((ident, ..)) = entry.entry_type.groupname_entry() {
-                    return self.visit_type_groupname_entry(&cddl::ast::TypeGroupnameEntry {
-                        occur: entry.occur.clone(),
-                        name: ident,
-                        generic_args: None,
-                    });
-                }
                 eprintln!(
                     "Expected key for value of type {} since this is a map. \
                     Did you mean to use `typename = (type1 / type2)` \
