@@ -248,10 +248,10 @@ ScriptCommand = (
 
 script.Channel = text;
 
-script.ChannelValue = {
+script.ChannelValue = (
   type: "channel",
   value: script.ChannelProperties,
-};
+)
 
 script.ChannelProperties = {
   channel: script.Channel,
@@ -303,10 +303,10 @@ script.ArrayLocalValue = {
   value: script.ListLocalValue,
 }
 
-script.DateLocalValue = {
+script.DateLocalValue = (
   type: "date",
   value: text
-}
+)
 
 script.MappingLocalValue = [*[(script.LocalValue / text), script.LocalValue]];
 
@@ -325,10 +325,10 @@ script.RegExpValue = {
   ? flags: text,
 }
 
-script.RegExpLocalValue = {
+script.RegExpLocalValue = (
   type: "regexp",
   value: script.RegExpValue,
-}
+)
 
 script.SetLocalValue = {
   type: "set",
@@ -600,19 +600,19 @@ script.StackTrace = {
   callFrames: [*script.StackFrame],
 }
 
-script.RealmTarget = {
+script.RealmTarget = (
   realm: script.Realm
-};
+)
 
-script.ContextTarget = {
+script.ContextTarget = (
   context: browsingContext.BrowsingContext,
   ? sandbox: text
-}
+)
 
 script.Target = (
   script.RealmTarget //
   script.ContextTarget
-);
+)
 
 script.AddPreloadScriptCommand = {
   method: "script.addPreloadScript",
