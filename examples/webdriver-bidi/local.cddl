@@ -47,7 +47,7 @@ Extensible = (*text => any)
 js-int = -9007199254740991..9007199254740991
 js-uint = 0..9007199254740991
 
-ErrorCode = "invalid argument" /
+ErrorCode = ("invalid argument" /
              "invalid session id" /
              "no such alert" /
              "no such frame" /
@@ -55,10 +55,11 @@ ErrorCode = "invalid argument" /
              "no such node" /
              "no such script" /
              "session not created" /
+             "unable to capture screen" /
              "unable to close browser" /
              "unknown command" /
              "unknown error" /
-             "unsupported operation"
+             "unsupported operation")
 
 SessionResult = (
    session.NewResult //
@@ -439,10 +440,10 @@ script.ArrayLocalValue = {
   value: script.ListLocalValue,
 }
 
-script.DateLocalValue = (
+script.DateLocalValue = {
   type: "date",
   value: text
-)
+}
 
 script.MappingLocalValue = [*[(script.LocalValue / text), script.LocalValue]];
 
@@ -461,10 +462,10 @@ script.RegExpValue = {
   ? flags: text,
 }
 
-script.RegExpLocalValue = (
+script.RegExpLocalValue = {
   type: "regexp",
   value: script.RegExpValue,
-)
+}
 
 script.SetLocalValue = {
   type: "set",
@@ -632,11 +633,11 @@ script.FunctionRemoteValue = {
   ? internalId: script.InternalId,
 }
 
-script.RegExpRemoteValue = (
+script.RegExpRemoteValue = {
   script.RegExpLocalValue,
   ? handle: script.Handle,
   ? internalId: script.InternalId,
-)
+}
 
 script.DateRemoteValue = {
   script.DateLocalValue,
@@ -748,8 +749,13 @@ script.NodeProperties = {
 
 script.WindowProxyRemoteValue = {
   type: "window",
+  value: script.WindowProxyProperties,
   ? handle: script.Handle,
-  ? internalId: script.InternalId,
+  ? internalId: script.InternalId
+}
+
+script.WindowProxyProperties = {
+  context: browsingContext.BrowsingContext
 }
 
 script.ResultOwnership = "root" / "none"
@@ -818,13 +824,13 @@ log.Entry = (
   log.JavascriptLogEntry
 )
 
-log.BaseLogEntry = (
+log.BaseLogEntry = {
   level: log.Level,
   source: script.Source,
   text: text / null,
   timestamp: js-uint,
   ? stackTrace: script.StackTrace,
-)
+}
 
 log.GenericLogEntry = {
   log.BaseLogEntry,

@@ -538,12 +538,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                return Err(Error::CDDL(format!(
+                eprintln!(
                     "Expected key for value of type {} since this is a map. \
                     Did you mean to declare {} with parenthesis (`( .. )`) \
                     instead of brackets (`{{ .. }}`)?",
                     entry.entry_type, entry.entry_type
-                )));
+                );
+                return Ok(());
             }
         };
         self.print_group_joiner();
