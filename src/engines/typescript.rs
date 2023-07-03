@@ -367,11 +367,11 @@ impl<'a, 'b: 'a, 'c> Engine {
                     }
                     if cfg!(feature = "vector_groups") {
                         print!("...");
-                        self.visit_identifier(&entry.name)?;
+                        self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                         print!("Vector");
                     } else {
                         print!("(");
-                        self.visit_identifier(&entry.name)?;
+                        self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                         print!(")");
                     }
                 }
@@ -387,11 +387,11 @@ impl<'a, 'b: 'a, 'c> Engine {
                         for _ in 0..bound {
                             if cfg!(feature = "vector_groups") {
                                 print!("...");
-                                self.visit_identifier(&entry.name)?;
+                                self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                                 print!("Vector");
                             } else {
                                 print!("(");
-                                self.visit_identifier(&entry.name)?;
+                                self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                                 print!(")");
                             }
                             print!(",");
@@ -401,19 +401,53 @@ impl<'a, 'b: 'a, 'c> Engine {
                 } else {
                     if cfg!(feature = "vector_groups") {
                         print!("Flatten<");
-                        self.visit_identifier(&entry.name)?;
+                        self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                         print!("Vector");
                         print!("[]");
                         print!(">");
                     } else {
                         print!("(");
-                        self.visit_identifier(&entry.name)?;
+                        self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                         print!(")");
                         print!("[]");
                     }
                 }
                 print!(")");
             }
+        }
+        Ok(())
+    }
+
+    fn visit_identifier_with_params(
+        &mut self,
+        ident: &cddl::ast::Identifier<'a>,
+        params: &Option<cddl::ast::GenericParams<'a>>,
+    ) -> cddl::visitor::Result<Error> {
+        self.visit_identifier(ident)?;
+        if let Some(params) = params {
+            print!("<");
+            for param in &params.params {
+                self.visit_identifier(&param.param)?;
+                print!(",")
+            }
+            print!(">");
+        }
+        Ok(())
+    }
+
+    fn visit_identifier_with_args(
+        &mut self,
+        ident: &cddl::ast::Identifier<'a>,
+        params: &Option<cddl::ast::GenericArgs<'a>>,
+    ) -> cddl::visitor::Result<Error> {
+        self.visit_identifier(ident)?;
+        if let Some(params) = params {
+            print!("<");
+            for param in &params.args {
+                self.visit_type1(&param.arg)?;
+                print!(",")
+            }
+            print!(">");
         }
         Ok(())
     }
@@ -463,7 +497,16 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             println!("}}");
         } else {
             self.visit_type_for_comment(&tr.value)?;
-            print!("export type {} = ", type_name);
+            print!("export type ");
+            self.visit_identifier_with_params(
+                &cddl::ast::Identifier {
+                    ident: &type_name,
+                    socket: None,
+                    span: Default::default(),
+                },
+                &tr.generic_params,
+            )?;
+            print!(" = ");
             self.visit_type(&tr.value)?;
             println!(";");
         }
@@ -594,10 +637,10 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         self.print_group_joiner();
         if is_group_entry_occurence_optional(&entry.occur) {
             print!("Partial<");
-            self.visit_identifier(&entry.name)?;
+            self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
             print!(">");
         } else {
-            self.visit_identifier(&entry.name)?;
+            self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
         }
         Ok(())
     }
@@ -689,8 +732,12 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     }
     fn visit_type2(&mut self, t2: &'b cddl::ast::Type2<'a>) -> cddl::visitor::Result<Error> {
         match t2 {
-            cddl::ast::Type2::Typename { ident, .. } => {
-                self.visit_identifier(&ident)?;
+            cddl::ast::Type2::Typename {
+                ident,
+                generic_args,
+                ..
+            } => {
+                self.visit_identifier_with_args(&ident, &generic_args)?;
             }
             cddl::ast::Type2::Array { group, .. } => {
                 self.visit_array(&group)?;
