@@ -558,6 +558,17 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                     instead of brackets (`{{ .. }}`)?",
                     entry.entry_type, entry.entry_type
                 );
+                // TODO: This is a temporary fix for situations where a typename
+                // should be used instead of a groupname.
+                self.exit_map();
+                self.print_group_joiner();
+                if is_group_entry_occurence_optional(&entry.occur) {
+                    print!("Partial<");
+                    self.visit_type(&entry.entry_type)?;
+                    print!(">");
+                } else {
+                    self.visit_type(&entry.entry_type)?;
+                }
                 return Ok(());
             }
         };
