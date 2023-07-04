@@ -47,7 +47,7 @@ Extensible = (*text => any)
 js-int = -9007199254740991..9007199254740991
 js-uint = 0..9007199254740991
 
-ErrorCode = ("invalid argument" /
+ErrorCode = "invalid argument" /
              "invalid session id" /
              "no such alert" /
              "no such frame" /
@@ -59,7 +59,7 @@ ErrorCode = ("invalid argument" /
              "unable to close browser" /
              "unknown command" /
              "unknown error" /
-             "unsupported operation")
+             "unsupported operation"
 
 SessionResult = (
    session.NewResult //
@@ -634,16 +634,14 @@ script.FunctionRemoteValue = {
 }
 
 script.RegExpRemoteValue = {
-  script.RegExpLocalValue,
   ? handle: script.Handle,
   ? internalId: script.InternalId,
-}
+} .and script.RegExpLocalValue
 
 script.DateRemoteValue = {
-  script.DateLocalValue,
   ? handle: script.Handle,
   ? internalId: script.InternalId,
-}
+} .and script.DateLocalValue
 
 script.MapRemoteValue = {
   type: "map",
@@ -824,13 +822,13 @@ log.Entry = (
   log.JavascriptLogEntry
 )
 
-log.BaseLogEntry = {
+log.BaseLogEntry = (
   level: log.Level,
   source: script.Source,
   text: text / null,
   timestamp: js-uint,
   ? stackTrace: script.StackTrace,
-}
+)
 
 log.GenericLogEntry = {
   log.BaseLogEntry,
