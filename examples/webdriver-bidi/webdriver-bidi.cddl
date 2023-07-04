@@ -17,10 +17,70 @@ EmptyParams = {
    Extensible
 }
 
+Message = (
+  CommandResponse //
+  ErrorResponse //
+  Event
+)
+
+CommandResponse = {
+  id: js-uint,
+  result: ResultData,
+  Extensible
+}
+
+ErrorResponse = {
+  id: js-uint / null,
+  error: ErrorCode,
+  message: text,
+  ? stacktrace: text,
+  Extensible
+}
+
+ResultData = (
+  BrowsingContextResult //
+  EmptyResult //
+  NetworkResult //
+  ScriptResult //
+  SessionResult
+)
+
+EmptyResult = {
+  Extensible
+}
+
+Event = {
+  EventData,
+  Extensible
+}
+
+EventData = (
+  BrowsingContextEvent //
+  LogEvent //
+  NetworkEvent //
+  ScriptEvent
+)
+
 Extensible = (*text => any)
 
 js-int = -9007199254740991..9007199254740991
 js-uint = 0..9007199254740991
+
+ErrorCode = "invalid argument" /
+            "invalid session id" /
+            "move target out of bounds" /
+            "no such alert" /
+            "no such element" /
+            "no such frame" /
+            "no such handle" /
+            "no such node" /
+            "no such script" /
+            "session not created" /
+            "unable to capture screen" /
+            "unable to close browser" /
+            "unknown command" /
+            "unknown error" /
+            "unsupported operation"
 
 SessionCommand = (
   session.End //
@@ -28,6 +88,11 @@ SessionCommand = (
   session.Status //
   session.Subscribe //
   session.Unsubscribe
+)
+
+SessionResult = (
+   session.NewResult //
+   session.StatusResult
 )
 
 session.CapabilitiesRequest = {
@@ -63,6 +128,11 @@ session.Status = {
   params: EmptyParams,
 }
 
+session.StatusResult = {
+  ready: bool,
+  message: text,
+}
+
 session.New = {
   method: "session.new",
   params: session.NewParameters
@@ -70,6 +140,28 @@ session.New = {
 
 session.NewParameters = {
   capabilities: session.CapabilitiesRequest
+}
+
+session.NewResult = {
+  sessionId: text,
+  capabilities: {
+    acceptInsecureCerts: bool,
+    browserName: text,
+    browserVersion: text,
+    platformName: text,
+    proxy: {
+      ? proxyType: "pac" / "direct" / "autodetect" / "system" / "manual",
+      ? proxyAutoconfigUrl: text,
+      ? ftpProxy: text,
+      ? httpProxy: text,
+      ? noProxy: [*text],
+      ? sslProxy: text,
+      ? socksProxy: text,
+      ? socksVersion: 0..255,
+    },
+    setWindowRect: bool,
+    Extensible
+  }
 }
 
 session.End = {
@@ -92,6 +184,7 @@ BrowserCommand = (
   browser.Close
 )
 
+
 browser.Close = {
   method: "browser.close",
   params: EmptyParams,
@@ -108,9 +201,47 @@ BrowsingContextCommand = (
   browsingContext.Reload
 )
 
+BrowsingContextResult = (
+  browsingContext.CaptureScreenshotResult //
+  browsingContext.CreateResult //
+  browsingContext.GetTreeResult //
+  browsingContext.NavigateResult //
+  browsingContext.PrintResult
+)
+
+BrowsingContextEvent = (
+  browsingContext.ContextCreated //
+  browsingContext.ContextDestroyed //
+  browsingContext.NavigationStarted //
+  browsingContext.FragmentNavigated //
+  browsingContext.DomContentLoaded //
+  browsingContext.Load //
+  browsingContext.DownloadWillBegin //
+  browsingContext.NavigationAborted //
+  browsingContext.NavigationFailed //
+  browsingContext.UserPromptClosed //
+  browsingContext.UserPromptOpened
+)
+
 browsingContext.BrowsingContext = text;
 
+browsingContext.InfoList = [*browsingContext.Info]
+
+browsingContext.Info = {
+  context: browsingContext.BrowsingContext,
+  url: text,
+  children: browsingContext.InfoList / null
+  ? parent: browsingContext.BrowsingContext / null,
+}
+
 browsingContext.Navigation = text;
+
+browsingContext.NavigationInfo = {
+  context: browsingContext.BrowsingContext,
+  navigation: browsingContext.Navigation / null,
+  timestamp: js-uint,
+  url: text,
+}
 
 browsingContext.ReadinessState = "none" / "interactive" / "complete"
 
@@ -120,7 +251,31 @@ browsingContext.CaptureScreenshot = {
 }
 
 browsingContext.CaptureScreenshotParameters = {
-  context: browsingContext.BrowsingContext
+  context: browsingContext.BrowsingContext,
+  ? clip: browsingContext.ClipRectangle
+}
+
+browsingContext.ClipRectangle = (
+  browsingContext.BoxClipRectangle //
+  browsingContext.ElementClipRectangle
+)
+
+browsingContext.ElementClipRectangle = {
+  type: "element",
+  element: script.SharedReference,
+  ? scrollIntoView: bool
+}
+
+browsingContext.BoxClipRectangle = {
+   type: "viewport",
+   x: float,
+   y: float,
+   width: float,
+   height: float
+}
+
+browsingContext.CaptureScreenshotResult = {
+  data: text
 }
 
 browsingContext.Close = {
@@ -144,6 +299,10 @@ browsingContext.CreateParameters = {
   ? referenceContext: browsingContext.BrowsingContext
 }
 
+browsingContext.CreateResult = {
+  context: browsingContext.BrowsingContext
+}
+
 browsingContext.GetTree = {
   method: "browsingContext.getTree",
   params: browsingContext.GetTreeParameters
@@ -152,6 +311,10 @@ browsingContext.GetTree = {
 browsingContext.GetTreeParameters = {
   ? maxDepth: js-uint,
   ? root: browsingContext.BrowsingContext,
+}
+
+browsingContext.GetTreeResult = {
+  contexts: browsingContext.InfoList
 }
 
 browsingContext.HandleUserPrompt = {
@@ -174,6 +337,11 @@ browsingContext.NavigateParameters = {
   context: browsingContext.BrowsingContext,
   url: text,
   ? wait: browsingContext.ReadinessState,
+}
+
+browsingContext.NavigateResult = {
+  navigation: browsingContext.Navigation / null,
+  url: text,
 }
 
 browsingContext.Print = {
@@ -204,6 +372,10 @@ browsingContext.PrintPageParameters = {
   ? width: (float .ge 0.0) .default 21.59,
 }
 
+browsingContext.PrintResult = {
+  data: text
+}
+
 browsingContext.Reload = {
   method: "browsingContext.reload",
   params: browsingContext.ReloadParameters
@@ -230,12 +402,213 @@ browsingContext.Viewport = {
   height: js-uint,
 }
 
+ browsingContext.ContextCreated = {
+  method: "browsingContext.contextCreated",
+  params: browsingContext.Info
+}
+
+ browsingContext.ContextDestroyed = {
+  method: "browsingContext.contextDestroyed",
+  params: browsingContext.Info
+}
+
+ browsingContext.NavigationStarted = {
+  method: "browsingContext.navigationStarted",
+  params: browsingContext.NavigationInfo
+}
+
+ browsingContext.FragmentNavigated = {
+  method: "browsingContext.fragmentNavigated",
+  params: browsingContext.NavigationInfo
+}
+
+ browsingContext.DomContentLoaded = {
+  method: "browsingContext.domContentLoaded",
+  params: browsingContext.NavigationInfo
+}
+
+ browsingContext.Load = {
+  method: "browsingContext.load",
+  params: browsingContext.NavigationInfo
+}
+
+ browsingContext.DownloadWillBegin = {
+  method: "browsingContext.downloadWillBegin",
+  params: browsingContext.NavigationInfo
+}
+
+ browsingContext.NavigationAborted = {
+  method: "browsingContext.navigationAborted",
+  params: browsingContext.NavigationInfo
+}
+
+ browsingContext.NavigationFailed = {
+  method: "browsingContext.navigationFailed",
+  params: browsingContext.NavigationInfo
+}
+
+browsingContext.UserPromptClosed = {
+  method: "browsingContext.userPromptClosed",
+  params: browsingContext.UserPromptClosedParameters
+}
+
+browsingContext.UserPromptClosedParameters = {
+  context: browsingContext.BrowsingContext,
+  accepted: bool,
+  ? userText: text
+}
+
+browsingContext.UserPromptOpened = {
+  method: "browsingContext.userPromptOpened",
+  params: browsingContext.UserPromptOpenedParameters
+}
+
+browsingContext.UserPromptOpenedParameters = {
+  context: browsingContext.BrowsingContext,
+  type: "alert" / "confirm" / "prompt" / "beforeunload",
+  message: text
+}
+
 
 NetworkCommand = (
 )
 
 
+
+NetworkResult = (
+)
+
+NetworkEvent = (
+    network.BeforeRequestSent //
+    network.FetchError //
+    network.ResponseStarted //
+    network.ResponseCompleted
+)
+
+
+network.BaseParameters = (
+    context: browsingContext.BrowsingContext / null,
+    navigation: browsingContext.Navigation / null,
+    redirectCount: js-uint,
+    request: network.RequestData,
+    timestamp: js-uint,
+)
+
+network.Cookie = {
+    name: text,
+    ? value: text,
+    ? binaryValue: [ uint ]
+    domain: text,
+    path: text,
+    ? expires: js-uint,
+    size: js-uint,
+    httpOnly: bool,
+    secure: bool,
+    sameSite: "strict" / "lax" / "none",
+};
+
+network.FetchTimingInfo = {
+    timeOrigin: float,
+    requestTime: float,
+    redirectStart: float,
+    redirectEnd: float,
+    fetchStart: float,
+    dnsStart: float,
+    dnsEnd: float,
+    connectStart: float,
+    connectEnd: float,
+    tlsStart: float,
+    
+    requestStart: float,
+    responseStart: float,
+    
+    responseEnd: float,
+};
+
+network.Header = {
+    name: text,
+    ? value: text,
+    ? binaryValue: [ uint ]
+};
+
+network.Initiator = {
+    type: "parser" / "script" / "preflight" / "other",
+    ? columnNumber: js-uint,
+    ? lineNumber: js-uint,
+    ? stackTrace: script.StackTrace,
+    ? request: network.Request
+};
+
 network.Request = text;
+
+network.RequestData = {
+    request: network.Request,
+    url: text,
+    method: text,
+    headers: [*network.Header],
+    cookies: [*network.Cookie],
+    headersSize: js-uint,
+    bodySize: js-uint / null,
+    timings: network.FetchTimingInfo,
+};
+
+network.ResponseContent = {
+    size: js-uint
+};
+
+network.ResponseData = {
+    url: text,
+    protocol: text,
+    status: js-uint,
+    statusText: text,
+    fromCache: bool,
+    headers: [*network.Header],
+    mimeType: text,
+    bytesReceived: js-uint,
+    headersSize: js-uint / null,
+    bodySize: js-uint / null,
+    content: network.ResponseContent
+};
+
+ network.BeforeRequestSent = {
+  method: "network.beforeRequestSent",
+  params: network.BeforeRequestSentParameters
+}
+
+network.BeforeRequestSentParameters = {
+  network.BaseParameters,
+  initiator: network.Initiator,
+}
+
+ network.FetchError = {
+  method: "network.fetchError",
+  params: network.FetchErrorParameters
+}
+
+network.FetchErrorParameters = {
+  network.BaseParameters,
+  errorText: text,
+}
+
+ network.ResponseCompleted = {
+  method: "network.responseCompleted",
+  params: network.ResponseCompletedParameters
+}
+
+network.ResponseCompletedParameters = {
+  network.BaseParameters,
+  response: network.ResponseData,
+}
+
+ network.ResponseStarted = {
+  method: "network.responseStarted",
+  params: network.ResponseStartedParameters
+}
+
+network.ResponseStartedParameters = {
+  network.BaseParameters,
+  response: network.ResponseData,
+}
 
 ScriptCommand = (
   script.AddPreloadScriptCommand //
@@ -246,12 +619,23 @@ ScriptCommand = (
   script.RemovePreloadScriptCommand
 )
 
+ScriptResult = (
+  script.AddPreloadScriptResult //
+  script.EvaluateResult //
+  script.GetRealmsResult
+)
+
+ScriptEvent = (
+  script.RealmCreated //
+  script.RealmDestroyed
+)
+
 script.Channel = text;
 
-script.ChannelValue = (
+script.ChannelValue = {
   type: "channel",
   value: script.ChannelProperties,
-)
+};
 
 script.ChannelProperties = {
   channel: script.Channel,
@@ -303,10 +687,10 @@ script.ArrayLocalValue = {
   value: script.ListLocalValue,
 }
 
-script.DateLocalValue = (
+script.DateLocalValue = {
   type: "date",
   value: text
-)
+}
 
 script.MappingLocalValue = [*[(script.LocalValue / text), script.LocalValue]];
 
@@ -325,10 +709,10 @@ script.RegExpValue = {
   ? flags: text,
 }
 
-script.RegExpLocalValue = (
+script.RegExpLocalValue = {
   type: "regexp",
   value: script.RegExpValue,
-)
+}
 
 script.SetLocalValue = {
   type: "set",
@@ -376,6 +760,64 @@ script.BooleanValue = {
 script.BigIntValue = {
   type: "bigint",
   value: text,
+}
+
+script.RealmInfo = (
+  script.WindowRealmInfo //
+  script.DedicatedWorkerRealmInfo //
+  script.SharedWorkerRealmInfo //
+  script.ServiceWorkerRealmInfo //
+  script.WorkerRealmInfo //
+  script.PaintWorkletRealmInfo //
+  script.AudioWorkletRealmInfo //
+  script.WorkletRealmInfo
+)
+
+script.BaseRealmInfo = (
+  realm: script.Realm,
+  origin: text
+)
+
+script.WindowRealmInfo = {
+  script.BaseRealmInfo,
+  type: "window",
+  context: browsingContext.BrowsingContext,
+  ? sandbox: text
+}
+
+script.DedicatedWorkerRealmInfo = {
+  script.BaseRealmInfo,
+  type: "dedicated-worker"
+}
+
+script.SharedWorkerRealmInfo = {
+  script.BaseRealmInfo,
+  type: "shared-worker"
+}
+
+script.ServiceWorkerRealmInfo = {
+  script.BaseRealmInfo,
+  type: "service-worker"
+}
+
+script.WorkerRealmInfo = {
+  script.BaseRealmInfo,
+  type: "worker"
+}
+
+script.PaintWorkletRealmInfo = {
+  script.BaseRealmInfo,
+  type: "paint-worklet"
+}
+
+script.AudioWorkletRealmInfo = {
+  script.BaseRealmInfo,
+  type: "audio-worklet"
+}
+
+script.WorkletRealmInfo = {
+  script.BaseRealmInfo,
+  type: "worklet"
 }
 
 script.RealmType = "window" / "dedicated-worker" / "shared-worker" / "service-worker" /
@@ -573,8 +1015,13 @@ script.NodeProperties = {
 
 script.WindowProxyRemoteValue = {
   type: "window",
+  value: script.WindowProxyProperties,
   ? handle: script.Handle,
-  ? internalId: script.InternalId,
+  ? internalId: script.InternalId
+}
+
+script.WindowProxyProperties = {
+  context: browsingContext.BrowsingContext
 }
 
 script.ResultOwnership = "root" / "none"
@@ -598,19 +1045,24 @@ script.StackTrace = {
   callFrames: [*script.StackFrame],
 }
 
-script.RealmTarget = (
-  realm: script.Realm
-)
+script.Source = (
+  realm: script.Realm,
+  ? context: browsingContext.BrowsingContext
+);
 
-script.ContextTarget = (
+script.RealmTarget = {
+  realm: script.Realm
+};
+
+script.ContextTarget = {
   context: browsingContext.BrowsingContext,
   ? sandbox: text
-)
+}
 
 script.Target = (
   script.RealmTarget //
   script.ContextTarget
-)
+);
 
 script.AddPreloadScriptCommand = {
   method: "script.addPreloadScript",
@@ -621,6 +1073,10 @@ script.AddPreloadScriptParameters = {
   functionDeclaration: text,
   ? arguments: [*script.ChannelValue],
   ? sandbox: text
+}
+
+script.AddPreloadScriptResult = {
+  script: script.PreloadScript
 }
 
 script.Disown = {
@@ -678,6 +1134,10 @@ script.GetRealmsParameters = {
   ? type: script.RealmType,
 }
 
+script.GetRealmsResult = {
+  realms: [*script.RealmInfo]
+}
+
 script.RemovePreloadScriptCommand = {
   method: "script.removePreloadScript",
   params: script.RemovePreloadScriptParameters
@@ -685,6 +1145,74 @@ script.RemovePreloadScriptCommand = {
 
 script.RemovePreloadScriptParameters = {
   script: script.PreloadScript
+}
+
+ script.Message = {
+  method: "script.message",
+  params: script.MessageParameters
+}
+
+script.MessageParameters = {
+  channel: script.Channel,
+  data: script.RemoteValue,
+  source: script.Source,
+}
+
+ script.RealmCreated = {
+  method: "script.realmCreated",
+  params: script.RealmInfo
+}
+
+script.RealmDestroyed = {
+  method: "script.realmDestoyed",
+  params: script.RealmDestroyedParameters
+}
+
+script.RealmDestroyedParameters = {
+  realm: script.Realm
+}
+
+
+LogEvent = (
+  log.EntryAdded
+)
+
+log.Level = "debug" / "info" / "warn" / "error"
+
+log.Entry = (
+  log.GenericLogEntry //
+  log.ConsoleLogEntry //
+  log.JavascriptLogEntry
+)
+
+log.BaseLogEntry = (
+  level: log.Level,
+  source: script.Source,
+  text: text / null,
+  timestamp: js-uint,
+  ? stackTrace: script.StackTrace,
+)
+
+log.GenericLogEntry = {
+  log.BaseLogEntry,
+  type: text,
+}
+
+log.ConsoleLogEntry = {
+  log.BaseLogEntry,
+  type: "console",
+  method: text,
+  args: [*script.RemoteValue],
+}
+
+log.JavascriptLogEntry = {
+  log.BaseLogEntry,
+  type: "javascript",
+}
+
+ log.EntryAdded = {
+  method: "log.entryAdded",
+  params: log.Entry,
 }
 
 
