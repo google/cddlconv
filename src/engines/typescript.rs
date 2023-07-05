@@ -715,17 +715,25 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         });
         self.visit_type2(&t1.type2)?;
         if let Some(cddl::ast::Operator {
-            operator:
-                cddl::ast::RangeCtlOp::CtlOp {
-                    ctrl: cddl::token::ControlOperator::WITHIN | cddl::token::ControlOperator::AND,
-                    ..
-                },
+            operator: cddl::ast::RangeCtlOp::CtlOp { ctrl, .. },
             type2,
             ..
         }) = &t1.operator
         {
-            println!(" & ");
-            self.visit_type2(&type2)?;
+            match ctrl {
+                cddl::token::ControlOperator::WITHIN => {
+                    println!(" extends ");
+                    self.visit_type2(&type2)?;
+                    println!(" ? ");
+                    self.visit_type2(&t1.type2)?;
+                    println!(" : never");
+                }
+                cddl::token::ControlOperator::AND => {
+                    println!(" & ");
+                    self.visit_type2(&type2)?;
+                }
+                _ => {}
+            }
         }
         self.nested_type1.pop();
         Ok(())
