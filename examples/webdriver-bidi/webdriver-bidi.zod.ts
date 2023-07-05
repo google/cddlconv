@@ -60,28 +60,28 @@ export const EventDataSchema = z.lazy(() =>
 );
 export const ExtensibleSchema = z.lazy(() => z.record(z.string(), z.any()));
 export const JsIntSchema = z.lazy(() =>
-  z.number().int().gte(-9007199254740991).lte(9007199254740991)
+  z.literal(-9007199254740991).gte(-9007199254740991).lte(9007199254740991)
 );
 export const JsUintSchema = z.lazy(() =>
-  z.number().int().nonnegative().gte(0).lte(9007199254740991)
+  z.literal(0).gte(0).lte(9007199254740991)
 );
 export const ErrorCodeSchema = z.lazy(() =>
   z.union([
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
-    z.string(),
+    z.literal("invalid argument"),
+    z.literal("invalid session id"),
+    z.literal("move target out of bounds"),
+    z.literal("no such alert"),
+    z.literal("no such element"),
+    z.literal("no such frame"),
+    z.literal("no such handle"),
+    z.literal("no such node"),
+    z.literal("no such script"),
+    z.literal("session not created"),
+    z.literal("unable to capture screen"),
+    z.literal("unable to close browser"),
+    z.literal("unknown command"),
+    z.literal("unknown error"),
+    z.literal("unsupported operation"),
   ])
 );
 export const SessionCommandSchema = z.lazy(() =>
@@ -116,11 +116,11 @@ export namespace Session {
           .object({
             proxyType: z
               .union([
-                z.string(),
-                z.string(),
-                z.string(),
-                z.string(),
-                z.string(),
+                z.literal("pac"),
+                z.literal("direct"),
+                z.literal("autodetect"),
+                z.literal("system"),
+                z.literal("manual"),
               ])
               .optional(),
             proxyAutoconfigUrl: z.string().optional(),
@@ -129,13 +129,7 @@ export namespace Session {
             noProxy: z.array(z.string()).optional(),
             sslProxy: z.string().optional(),
             socksProxy: z.string().optional(),
-            socksVersion: z
-              .number()
-              .int()
-              .nonnegative()
-              .gte(0)
-              .lte(255)
-              .optional(),
+            socksVersion: z.literal(0).gte(0).lte(255).optional(),
           })
           .optional(),
       })
@@ -153,7 +147,7 @@ export namespace Session {
 export namespace Session {
   export const StatusSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("session.status"),
       params: EmptyParamsSchema,
     })
   );
@@ -169,7 +163,7 @@ export namespace Session {
 export namespace Session {
   export const NewSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("session.new"),
       params: Session.NewParametersSchema,
     })
   );
@@ -194,11 +188,11 @@ export namespace Session {
           proxy: z.object({
             proxyType: z
               .union([
-                z.string(),
-                z.string(),
-                z.string(),
-                z.string(),
-                z.string(),
+                z.literal("pac"),
+                z.literal("direct"),
+                z.literal("autodetect"),
+                z.literal("system"),
+                z.literal("manual"),
               ])
               .optional(),
             proxyAutoconfigUrl: z.string().optional(),
@@ -207,13 +201,7 @@ export namespace Session {
             noProxy: z.array(z.string()).optional(),
             sslProxy: z.string().optional(),
             socksProxy: z.string().optional(),
-            socksVersion: z
-              .number()
-              .int()
-              .nonnegative()
-              .gte(0)
-              .lte(255)
-              .optional(),
+            socksVersion: z.literal(0).gte(0).lte(255).optional(),
           }),
           setWindowRect: z.boolean(),
         })
@@ -224,7 +212,7 @@ export namespace Session {
 export namespace Session {
   export const EndSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("session.end"),
       params: EmptyParamsSchema,
     })
   );
@@ -232,7 +220,7 @@ export namespace Session {
 export namespace Session {
   export const SubscribeSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("session.subscribe"),
       params: Session.SubscriptionRequestSchema,
     })
   );
@@ -240,7 +228,7 @@ export namespace Session {
 export namespace Session {
   export const UnsubscribeSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("session.unsubscribe"),
       params: Session.SubscriptionRequestSchema,
     })
   );
@@ -249,7 +237,7 @@ export const BrowserCommandSchema = z.lazy(() => Browser.CloseSchema);
 export namespace Browser {
   export const CloseSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browser.close"),
       params: EmptyParamsSchema,
     })
   );
@@ -325,13 +313,17 @@ export namespace BrowsingContext {
 }
 export namespace BrowsingContext {
   export const ReadinessStateSchema = z.lazy(() =>
-    z.union([z.string(), z.string(), z.string()])
+    z.union([
+      z.literal("none"),
+      z.literal("interactive"),
+      z.literal("complete"),
+    ])
   );
 }
 export namespace BrowsingContext {
   export const CaptureScreenshotSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.captureScreenshot"),
       params: BrowsingContext.CaptureScreenshotParametersSchema,
     })
   );
@@ -355,7 +347,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const ElementClipRectangleSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("element"),
       element: Script.SharedReferenceSchema,
       scrollIntoView: z.boolean().optional(),
     })
@@ -364,7 +356,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const BoxClipRectangleSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("viewport"),
       x: z.number(),
       y: z.number(),
       width: z.number(),
@@ -382,7 +374,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const CloseSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.close"),
       params: BrowsingContext.CloseParametersSchema,
     })
   );
@@ -397,14 +389,14 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const CreateSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.create"),
       params: BrowsingContext.CreateParametersSchema,
     })
   );
 }
 export namespace BrowsingContext {
   export const CreateTypeSchema = z.lazy(() =>
-    z.union([z.string(), z.string()])
+    z.union([z.literal("tab"), z.literal("window")])
   );
 }
 export namespace BrowsingContext {
@@ -425,7 +417,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const GetTreeSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.getTree"),
       params: BrowsingContext.GetTreeParametersSchema,
     })
   );
@@ -448,7 +440,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const HandleUserPromptSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.handleUserPrompt"),
       params: BrowsingContext.HandleUserPromptParametersSchema,
     })
   );
@@ -465,7 +457,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const NavigateSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.navigate"),
       params: BrowsingContext.NavigateParametersSchema,
     })
   );
@@ -490,7 +482,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const PrintSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.print"),
       params: BrowsingContext.PrintParametersSchema,
     })
   );
@@ -502,12 +494,12 @@ export namespace BrowsingContext {
       background: z.boolean().default(false).optional(),
       margin: BrowsingContext.PrintMarginParametersSchema.optional(),
       orientation: z
-        .union([z.string(), z.string()])
+        .union([z.literal("portrait"), z.literal("landscape")])
         .default("portrait")
         .optional(),
       page: BrowsingContext.PrintPageParametersSchema.optional(),
       pageRanges: z.array(z.union([JsUintSchema, z.string()])).optional(),
-      scale: z.number().gte(0.1).lte(2).default(1).optional(),
+      scale: z.literal(0.1).gte(0.1).lte(2).default(1).optional(),
       shrinkToFit: z.boolean().default(true).optional(),
     })
   );
@@ -540,7 +532,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const ReloadSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.reload"),
       params: BrowsingContext.ReloadParametersSchema,
     })
   );
@@ -557,7 +549,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const SetViewportSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.setViewport"),
       params: BrowsingContext.SetViewportParametersSchema,
     })
   );
@@ -581,7 +573,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const ContextCreatedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.contextCreated"),
       params: BrowsingContext.InfoSchema,
     })
   );
@@ -589,7 +581,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const ContextDestroyedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.contextDestroyed"),
       params: BrowsingContext.InfoSchema,
     })
   );
@@ -597,7 +589,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const NavigationStartedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.navigationStarted"),
       params: BrowsingContext.NavigationInfoSchema,
     })
   );
@@ -605,7 +597,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const FragmentNavigatedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.fragmentNavigated"),
       params: BrowsingContext.NavigationInfoSchema,
     })
   );
@@ -613,7 +605,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const DomContentLoadedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.domContentLoaded"),
       params: BrowsingContext.NavigationInfoSchema,
     })
   );
@@ -621,7 +613,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const LoadSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.load"),
       params: BrowsingContext.NavigationInfoSchema,
     })
   );
@@ -629,7 +621,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const DownloadWillBeginSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.downloadWillBegin"),
       params: BrowsingContext.NavigationInfoSchema,
     })
   );
@@ -637,7 +629,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const NavigationAbortedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.navigationAborted"),
       params: BrowsingContext.NavigationInfoSchema,
     })
   );
@@ -645,7 +637,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const NavigationFailedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.navigationFailed"),
       params: BrowsingContext.NavigationInfoSchema,
     })
   );
@@ -653,7 +645,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const UserPromptClosedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.userPromptClosed"),
       params: BrowsingContext.UserPromptClosedParametersSchema,
     })
   );
@@ -670,7 +662,7 @@ export namespace BrowsingContext {
 export namespace BrowsingContext {
   export const UserPromptOpenedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("browsingContext.userPromptOpened"),
       params: BrowsingContext.UserPromptOpenedParametersSchema,
     })
   );
@@ -679,7 +671,12 @@ export namespace BrowsingContext {
   export const UserPromptOpenedParametersSchema = z.lazy(() =>
     z.object({
       context: BrowsingContext.BrowsingContextSchema,
-      type: z.union([z.string(), z.string(), z.string(), z.string()]),
+      type: z.union([
+        z.literal("alert"),
+        z.literal("confirm"),
+        z.literal("prompt"),
+        z.literal("beforeunload"),
+      ]),
       message: z.string(),
     })
   );
@@ -717,7 +714,11 @@ export namespace Network {
       size: JsUintSchema,
       httpOnly: z.boolean(),
       secure: z.boolean(),
-      sameSite: z.union([z.string(), z.string(), z.string()]),
+      sameSite: z.union([
+        z.literal("strict"),
+        z.literal("lax"),
+        z.literal("none"),
+      ]),
     })
   );
 }
@@ -752,7 +753,12 @@ export namespace Network {
 export namespace Network {
   export const InitiatorSchema = z.lazy(() =>
     z.object({
-      type: z.union([z.string(), z.string(), z.string(), z.string()]),
+      type: z.union([
+        z.literal("parser"),
+        z.literal("script"),
+        z.literal("preflight"),
+        z.literal("other"),
+      ]),
       columnNumber: JsUintSchema.optional(),
       lineNumber: JsUintSchema.optional(),
       stackTrace: Script.StackTraceSchema.optional(),
@@ -804,7 +810,7 @@ export namespace Network {
 export namespace Network {
   export const BeforeRequestSentSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("network.beforeRequestSent"),
       params: Network.BeforeRequestSentParametersSchema,
     })
   );
@@ -821,7 +827,7 @@ export namespace Network {
 export namespace Network {
   export const FetchErrorSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("network.fetchError"),
       params: Network.FetchErrorParametersSchema,
     })
   );
@@ -838,7 +844,7 @@ export namespace Network {
 export namespace Network {
   export const ResponseCompletedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("network.responseCompleted"),
       params: Network.ResponseCompletedParametersSchema,
     })
   );
@@ -855,7 +861,7 @@ export namespace Network {
 export namespace Network {
   export const ResponseStartedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("network.responseStarted"),
       params: Network.ResponseStartedParametersSchema,
     })
   );
@@ -895,7 +901,7 @@ export namespace Script {
 export namespace Script {
   export const ChannelValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("channel"),
       value: Script.ChannelPropertiesSchema,
     })
   );
@@ -920,7 +926,7 @@ export namespace Script {
 export namespace Script {
   export const EvaluateResultSuccessSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("success"),
       result: Script.RemoteValueSchema,
       realm: Script.RealmSchema,
     })
@@ -929,7 +935,7 @@ export namespace Script {
 export namespace Script {
   export const EvaluateResultExceptionSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("exception"),
       exceptionDetails: Script.ExceptionDetailsSchema,
       realm: Script.RealmSchema,
     })
@@ -970,7 +976,7 @@ export namespace Script {
 export namespace Script {
   export const ArrayLocalValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("array"),
       value: Script.ListLocalValueSchema,
     })
   );
@@ -978,7 +984,7 @@ export namespace Script {
 export namespace Script {
   export const DateLocalValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("date"),
       value: z.string(),
     })
   );
@@ -995,7 +1001,7 @@ export namespace Script {
 export namespace Script {
   export const MapLocalValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("map"),
       value: Script.MappingLocalValueSchema,
     })
   );
@@ -1003,7 +1009,7 @@ export namespace Script {
 export namespace Script {
   export const ObjectLocalValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("object"),
       value: Script.MappingLocalValueSchema,
     })
   );
@@ -1019,7 +1025,7 @@ export namespace Script {
 export namespace Script {
   export const RegExpLocalValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("regexp"),
       value: Script.RegExpValueSchema,
     })
   );
@@ -1027,7 +1033,7 @@ export namespace Script {
 export namespace Script {
   export const SetLocalValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("set"),
       value: Script.ListLocalValueSchema,
     })
   );
@@ -1053,34 +1059,39 @@ export namespace Script {
 export namespace Script {
   export const UndefinedValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("undefined"),
     })
   );
 }
 export namespace Script {
   export const NullValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("null"),
     })
   );
 }
 export namespace Script {
   export const StringValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("string"),
       value: z.string(),
     })
   );
 }
 export namespace Script {
   export const SpecialNumberSchema = z.lazy(() =>
-    z.union([z.string(), z.string(), z.string(), z.string()])
+    z.union([
+      z.literal("NaN"),
+      z.literal("-0"),
+      z.literal("Infinity"),
+      z.literal("-Infinity"),
+    ])
   );
 }
 export namespace Script {
   export const NumberValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("number"),
       value: z.union([z.number(), Script.SpecialNumberSchema]),
     })
   );
@@ -1088,7 +1099,7 @@ export namespace Script {
 export namespace Script {
   export const BooleanValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("boolean"),
       value: z.boolean(),
     })
   );
@@ -1096,7 +1107,7 @@ export namespace Script {
 export namespace Script {
   export const BigIntValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("bigint"),
       value: z.string(),
     })
   );
@@ -1127,7 +1138,7 @@ export namespace Script {
   export const WindowRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("window"),
         context: BrowsingContext.BrowsingContextSchema,
         sandbox: z.string().optional(),
       })
@@ -1138,7 +1149,7 @@ export namespace Script {
   export const DedicatedWorkerRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("dedicated-worker"),
       })
     )
   );
@@ -1147,7 +1158,7 @@ export namespace Script {
   export const SharedWorkerRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("shared-worker"),
       })
     )
   );
@@ -1156,7 +1167,7 @@ export namespace Script {
   export const ServiceWorkerRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("service-worker"),
       })
     )
   );
@@ -1165,7 +1176,7 @@ export namespace Script {
   export const WorkerRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("worker"),
       })
     )
   );
@@ -1174,7 +1185,7 @@ export namespace Script {
   export const PaintWorkletRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("paint-worklet"),
       })
     )
   );
@@ -1183,7 +1194,7 @@ export namespace Script {
   export const AudioWorkletRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("audio-worklet"),
       })
     )
   );
@@ -1192,7 +1203,7 @@ export namespace Script {
   export const WorkletRealmInfoSchema = z.lazy(() =>
     Script.BaseRealmInfoSchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("worklet"),
       })
     )
   );
@@ -1200,14 +1211,14 @@ export namespace Script {
 export namespace Script {
   export const RealmTypeSchema = z.lazy(() =>
     z.union([
-      z.string(),
-      z.string(),
-      z.string(),
-      z.string(),
-      z.string(),
-      z.string(),
-      z.string(),
-      z.string(),
+      z.literal("window"),
+      z.literal("dedicated-worker"),
+      z.literal("shared-worker"),
+      z.literal("service-worker"),
+      z.literal("worker"),
+      z.literal("paint-worklet"),
+      z.literal("audio-worklet"),
+      z.literal("worklet"),
     ])
   );
 }
@@ -1284,7 +1295,7 @@ export namespace Script {
 export namespace Script {
   export const SymbolRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("symbol"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1293,7 +1304,7 @@ export namespace Script {
 export namespace Script {
   export const ArrayRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("array"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
       value: Script.ListRemoteValueSchema.optional(),
@@ -1303,7 +1314,7 @@ export namespace Script {
 export namespace Script {
   export const ObjectRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("object"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
       value: Script.MappingRemoteValueSchema.optional(),
@@ -1313,7 +1324,7 @@ export namespace Script {
 export namespace Script {
   export const FunctionRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("function"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1342,7 +1353,7 @@ export namespace Script {
 export namespace Script {
   export const MapRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("map"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
       value: Script.MappingRemoteValueSchema.optional(),
@@ -1352,7 +1363,7 @@ export namespace Script {
 export namespace Script {
   export const SetRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("set"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
       value: Script.ListRemoteValueSchema.optional(),
@@ -1362,7 +1373,7 @@ export namespace Script {
 export namespace Script {
   export const WeakMapRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("weakmap"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1371,7 +1382,7 @@ export namespace Script {
 export namespace Script {
   export const WeakSetRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("weakset"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1380,7 +1391,7 @@ export namespace Script {
 export namespace Script {
   export const IteratorRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("iterator"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1389,7 +1400,7 @@ export namespace Script {
 export namespace Script {
   export const GeneratorRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("generator"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1398,7 +1409,7 @@ export namespace Script {
 export namespace Script {
   export const ErrorRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("error"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1407,7 +1418,7 @@ export namespace Script {
 export namespace Script {
   export const ProxyRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("proxy"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1416,7 +1427,7 @@ export namespace Script {
 export namespace Script {
   export const PromiseRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("promise"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1425,7 +1436,7 @@ export namespace Script {
 export namespace Script {
   export const TypedArrayRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("typedarray"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1434,7 +1445,7 @@ export namespace Script {
 export namespace Script {
   export const ArrayBufferRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("arraybuffer"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
     })
@@ -1443,7 +1454,7 @@ export namespace Script {
 export namespace Script {
   export const NodeListRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("nodelist"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
       value: Script.ListRemoteValueSchema.optional(),
@@ -1453,7 +1464,7 @@ export namespace Script {
 export namespace Script {
   export const HtmlCollectionRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("htmlcollection"),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
       value: Script.ListRemoteValueSchema.optional(),
@@ -1463,7 +1474,7 @@ export namespace Script {
 export namespace Script {
   export const NodeRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("node"),
       sharedId: Script.SharedIdSchema.optional(),
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
@@ -1479,7 +1490,7 @@ export namespace Script {
       attributes: z.record(z.string(), z.string()).optional(),
       children: z.array(Script.NodeRemoteValueSchema).optional(),
       localName: z.string().optional(),
-      mode: z.union([z.string(), z.string()]).optional(),
+      mode: z.union([z.literal("open"), z.literal("closed")]).optional(),
       namespaceURI: z.string().optional(),
       nodeValue: z.string().optional(),
       shadowRoot: z.union([Script.NodeRemoteValueSchema, z.null()]).optional(),
@@ -1489,7 +1500,7 @@ export namespace Script {
 export namespace Script {
   export const WindowProxyRemoteValueSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("window"),
       value: Script.WindowProxyPropertiesSchema,
       handle: Script.HandleSchema.optional(),
       internalId: Script.InternalIdSchema.optional(),
@@ -1505,7 +1516,7 @@ export namespace Script {
 }
 export namespace Script {
   export const ResultOwnershipSchema = z.lazy(() =>
-    z.union([z.string(), z.string()])
+    z.union([z.literal("root"), z.literal("none")])
   );
 }
 export namespace Script {
@@ -1517,7 +1528,7 @@ export namespace Script {
         .default(null)
         .optional(),
       includeShadowTree: z
-        .union([z.string(), z.string(), z.string()])
+        .union([z.literal("none"), z.literal("open"), z.literal("all")])
         .default("none")
         .optional(),
     })
@@ -1574,7 +1585,7 @@ export namespace Script {
 export namespace Script {
   export const AddPreloadScriptCommandSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.addPreloadScript"),
       params: Script.AddPreloadScriptParametersSchema,
     })
   );
@@ -1598,7 +1609,7 @@ export namespace Script {
 export namespace Script {
   export const DisownSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.disown"),
       params: Script.DisownParametersSchema,
     })
   );
@@ -1614,7 +1625,7 @@ export namespace Script {
 export namespace Script {
   export const CallFunctionSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.callFunction"),
       params: Script.CallFunctionParametersSchema,
     })
   );
@@ -1644,7 +1655,7 @@ export namespace Script {
 export namespace Script {
   export const EvaluateSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.evaluate"),
       params: Script.EvaluateParametersSchema,
     })
   );
@@ -1663,7 +1674,7 @@ export namespace Script {
 export namespace Script {
   export const GetRealmsSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.getRealms"),
       params: Script.GetRealmsParametersSchema,
     })
   );
@@ -1686,7 +1697,7 @@ export namespace Script {
 export namespace Script {
   export const RemovePreloadScriptCommandSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.removePreloadScript"),
       params: Script.RemovePreloadScriptParametersSchema,
     })
   );
@@ -1701,7 +1712,7 @@ export namespace Script {
 export namespace Script {
   export const MessageSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.message"),
       params: Script.MessageParametersSchema,
     })
   );
@@ -1718,7 +1729,7 @@ export namespace Script {
 export namespace Script {
   export const RealmCreatedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.realmCreated"),
       params: Script.RealmInfoSchema,
     })
   );
@@ -1726,7 +1737,7 @@ export namespace Script {
 export namespace Script {
   export const RealmDestroyedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("script.realmDestoyed"),
       params: Script.RealmDestroyedParametersSchema,
     })
   );
@@ -1741,7 +1752,12 @@ export namespace Script {
 export const LogEventSchema = z.lazy(() => Log.EntryAddedSchema);
 export namespace Log {
   export const LevelSchema = z.lazy(() =>
-    z.union([z.string(), z.string(), z.string(), z.string()])
+    z.union([
+      z.literal("debug"),
+      z.literal("info"),
+      z.literal("warn"),
+      z.literal("error"),
+    ])
   );
 }
 export namespace Log {
@@ -1777,7 +1793,7 @@ export namespace Log {
   export const ConsoleLogEntrySchema = z.lazy(() =>
     Log.BaseLogEntrySchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("console"),
         method: z.string(),
         args: z.array(Script.RemoteValueSchema),
       })
@@ -1788,7 +1804,7 @@ export namespace Log {
   export const JavascriptLogEntrySchema = z.lazy(() =>
     Log.BaseLogEntrySchema.and(
       z.object({
-        type: z.string(),
+        type: z.literal("javascript"),
       })
     )
   );
@@ -1796,7 +1812,7 @@ export namespace Log {
 export namespace Log {
   export const EntryAddedSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("log.entryAdded"),
       params: Log.EntrySchema,
     })
   );
@@ -1807,7 +1823,7 @@ export const InputCommandSchema = z.lazy(() =>
 export namespace Input {
   export const ElementOriginSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("element"),
       element: Script.SharedReferenceSchema,
     })
   );
@@ -1815,7 +1831,7 @@ export namespace Input {
 export namespace Input {
   export const PerformActionsSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("input.performActions"),
       params: Input.PerformActionsParametersSchema,
     })
   );
@@ -1841,7 +1857,7 @@ export namespace Input {
 export namespace Input {
   export const NoneSourceActionsSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("none"),
       id: z.string(),
       actions: z.array(Input.NoneSourceActionSchema),
     })
@@ -1853,7 +1869,7 @@ export namespace Input {
 export namespace Input {
   export const KeySourceActionsSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("key"),
       id: z.string(),
       actions: z.array(Input.KeySourceActionSchema),
     })
@@ -1871,7 +1887,7 @@ export namespace Input {
 export namespace Input {
   export const PointerSourceActionsSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("pointer"),
       id: z.string(),
       parameters: Input.PointerParametersSchema.optional(),
       actions: z.array(Input.PointerSourceActionSchema),
@@ -1880,7 +1896,7 @@ export namespace Input {
 }
 export namespace Input {
   export const PointerTypeSchema = z.lazy(() =>
-    z.union([z.string(), z.string(), z.string()])
+    z.union([z.literal("mouse"), z.literal("pen"), z.literal("touch")])
   );
 }
 export namespace Input {
@@ -1903,7 +1919,7 @@ export namespace Input {
 export namespace Input {
   export const WheelSourceActionsSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("wheel"),
       id: z.string(),
       actions: z.array(Input.WheelSourceActionSchema),
     })
@@ -1917,7 +1933,7 @@ export namespace Input {
 export namespace Input {
   export const PauseActionSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("pause"),
       duration: JsUintSchema.optional(),
     })
   );
@@ -1925,7 +1941,7 @@ export namespace Input {
 export namespace Input {
   export const KeyDownActionSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("keyDown"),
       value: z.string(),
     })
   );
@@ -1933,7 +1949,7 @@ export namespace Input {
 export namespace Input {
   export const KeyUpActionSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("keyUp"),
       value: z.string(),
     })
   );
@@ -1942,7 +1958,7 @@ export namespace Input {
   export const PointerUpActionSchema = z.lazy(() =>
     z
       .object({
-        type: z.string(),
+        type: z.literal("pointerUp"),
         button: JsUintSchema,
       })
       .and(Input.PointerCommonPropertiesSchema)
@@ -1952,7 +1968,7 @@ export namespace Input {
   export const PointerDownActionSchema = z.lazy(() =>
     z
       .object({
-        type: z.string(),
+        type: z.literal("pointerDown"),
         button: JsUintSchema,
       })
       .and(Input.PointerCommonPropertiesSchema)
@@ -1962,7 +1978,7 @@ export namespace Input {
   export const PointerMoveActionSchema = z.lazy(() =>
     z
       .object({
-        type: z.string(),
+        type: z.literal("pointerMove"),
         x: JsIntSchema,
         y: JsIntSchema,
         duration: JsUintSchema.optional(),
@@ -1974,7 +1990,7 @@ export namespace Input {
 export namespace Input {
   export const WheelScrollActionSchema = z.lazy(() =>
     z.object({
-      type: z.string(),
+      type: z.literal("scroll"),
       x: JsIntSchema,
       y: JsIntSchema,
       deltaX: JsIntSchema,
@@ -1992,14 +2008,7 @@ export namespace Input {
         height: JsUintSchema.default(1).optional(),
         pressure: z.number().default(0).optional(),
         tangentialPressure: z.number().default(0).optional(),
-        twist: z
-          .number()
-          .int()
-          .nonnegative()
-          .gte(0)
-          .lte(359)
-          .default(0)
-          .optional(),
+        twist: z.literal(0).gte(0).lte(359).default(0).optional(),
       })
       .and(z.union([Input.TiltPropertiesSchema, Input.AnglePropertiesSchema]))
   );
@@ -2015,20 +2024,24 @@ export namespace Input {
 export namespace Input {
   export const TiltPropertiesSchema = z.lazy(() =>
     z.object({
-      tiltX: z.number().int().gte(-90).lte(90).default(0).optional(),
-      tiltY: z.number().int().gte(-90).lte(90).default(0).optional(),
+      tiltX: z.literal(-90).gte(-90).lte(90).default(0).optional(),
+      tiltY: z.literal(-90).gte(-90).lte(90).default(0).optional(),
     })
   );
 }
 export namespace Input {
   export const OriginSchema = z.lazy(() =>
-    z.union([z.string(), z.string(), Input.ElementOriginSchema])
+    z.union([
+      z.literal("viewport"),
+      z.literal("pointer"),
+      Input.ElementOriginSchema,
+    ])
   );
 }
 export namespace Input {
   export const ReleaseActionsSchema = z.lazy(() =>
     z.object({
-      method: z.string(),
+      method: z.literal("input.releaseActions"),
       params: Input.ReleaseActionsParametersSchema,
     })
   );

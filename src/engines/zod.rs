@@ -92,16 +92,6 @@ impl<'a, 'b: 'a, 'c> Engine {
             )
         }
     }
-    fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
-        match value {
-            cddl::token::Value::INT(value) => print!("{}", value),
-            cddl::token::Value::UINT(value) => print!("{}", value),
-            cddl::token::Value::FLOAT(value) => print!("{}", value),
-            cddl::token::Value::TEXT(value) => print!("\"{}\"", value),
-            cddl::token::Value::BYTE(value) => print!("\"{}\"", value),
-        }
-        Ok(())
-    }
     fn visit_array(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         if g.group_choices.len() != 1 {
             print!("z.union([");
@@ -368,8 +358,8 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         if !self
             .nested_type1
             .last()
-            .unwrap_or(&Type1Context { use_generic: false })
-            .use_generic
+            .map(|context| context.use_generic)
+            .unwrap_or(true)
         {
             match ident.ident {
                 "null" => {
@@ -747,10 +737,11 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
         if self.nested_type1.last().unwrap().use_generic {
             match value {
-                cddl::token::Value::INT(_) => print!("z.number().int()"),
-                cddl::token::Value::UINT(_) => print!("z.number().int().nonnegative()"),
-                cddl::token::Value::FLOAT(_) => print!("z.number()"),
-                cddl::token::Value::TEXT(_) | cddl::token::Value::BYTE(_) => print!("z.string()"),
+                cddl::token::Value::INT(value) => print!("z.literal({})", value),
+                cddl::token::Value::UINT(value) => print!("z.literal({})", value),
+                cddl::token::Value::FLOAT(value) => print!("z.literal({})", value),
+                cddl::token::Value::TEXT(value) => print!("z.literal(\"{}\")", value),
+                cddl::token::Value::BYTE(value) => print!("z.literal(\"{}\")", value),
             }
         } else {
             match value {
