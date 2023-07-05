@@ -45,8 +45,8 @@ fn main() -> Result<()> {
     match args.format {
         EngineType::TypeScript => {
             let mut engine = engines::typescript::Engine::new();
-            engines::typescript::Engine::print_preamble();
             engine.visit_cddl(&cddl)?;
+            engine.print_postamble();
         }
     };
 

@@ -27,10 +27,17 @@ struct Type1Context {
     use_generic: bool,
 }
 
+struct PostambleOptions {
+    #[cfg(feature = "vector_groups")]
+    print_flatten: bool,
+}
+
 pub struct Engine {
     in_comment: bool,
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
+    #[allow(dead_code)]
+    postamble_options: PostambleOptions,
 }
 
 fn is_group_entry_occurence_optional(occur: &Option<cddl::ast::Occurrence<'_>>) -> bool {
@@ -66,10 +73,15 @@ impl<'a, 'b: 'a, 'c> Engine {
             in_comment: false,
             nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
+            postamble_options: PostambleOptions {
+                #[cfg(feature = "vector_groups")]
+                print_flatten: false,
+            },
         }
     }
-    pub fn print_preamble() {
-        if cfg!(feature = "vector_groups") {
+    pub fn print_postamble(&mut self) {
+        #[cfg(feature = "vector_groups")]
+        if self.postamble_options.print_flatten {
             print!(
                 "export type Flatten<T extends unknown[]> = T extends (infer S)[][] \
                     ? S[] \
@@ -399,13 +411,17 @@ impl<'a, 'b: 'a, 'c> Engine {
                         print!("]");
                     }
                 } else {
-                    if cfg!(feature = "vector_groups") {
+                    #[cfg(feature = "vector_groups")]
+                    {
+                        self.postamble_options.print_flatten = true;
                         print!("Flatten<");
                         self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                         print!("Vector");
                         print!("[]");
                         print!(">");
-                    } else {
+                    }
+                    #[cfg(not(feature = "vector_groups"))]
+                    {
                         print!("(");
                         self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                         print!(")");
