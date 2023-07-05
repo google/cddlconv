@@ -23,6 +23,7 @@ use std::path::PathBuf;
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum EngineType {
     TypeScript,
+    Zod,
 }
 
 /// Simple program to greet a person
@@ -45,6 +46,12 @@ fn main() -> Result<()> {
     match args.format {
         EngineType::TypeScript => {
             let mut engine = engines::typescript::Engine::new();
+            engine.visit_cddl(&cddl)?;
+            engine.print_postamble();
+        }
+        EngineType::Zod => {
+            let mut engine = engines::zod::Engine::new();
+            engines::zod::Engine::print_preamble();
             engine.visit_cddl(&cddl)?;
             engine.print_postamble();
         }
