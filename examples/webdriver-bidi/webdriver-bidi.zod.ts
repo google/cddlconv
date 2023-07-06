@@ -992,9 +992,10 @@ export namespace Script {
 export namespace Script {
   export const MappingLocalValueSchema = z.lazy(() =>
     z.array(
-      z
-        .tuple([z.union([Script.LocalValueSchema, z.string()])])
-        .and(z.tuple([Script.LocalValueSchema]))
+      z.tuple([
+        z.union([Script.LocalValueSchema, z.string()]),
+        Script.LocalValueSchema,
+      ])
     )
   );
 }
@@ -1286,9 +1287,10 @@ export namespace Script {
 export namespace Script {
   export const MappingRemoteValueSchema = z.lazy(() =>
     z.array(
-      z
-        .tuple([z.union([Script.RemoteValueSchema, z.string()])])
-        .and(z.tuple([Script.RemoteValueSchema]))
+      z.tuple([
+        z.union([Script.RemoteValueSchema, z.string()]),
+        Script.RemoteValueSchema,
+      ])
     )
   );
 }
