@@ -92,6 +92,7 @@ impl<'a, 'b: 'a, 'c> Engine {
         println!("// @ts-nocheck Some types may be circular.");
         println!();
         println!("import z from 'zod';");
+        println!();
     }
     pub fn print_postamble(&mut self) {
         #[cfg(feature = "vector_groups")]
