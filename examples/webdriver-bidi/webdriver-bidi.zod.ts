@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck Some types may be circular.
+
 import z from "zod";
 export const CommandSchema = z.lazy(() =>
   z
@@ -74,6 +77,7 @@ export const ErrorCodeSchema = z.lazy(() =>
     "no such element",
     "no such frame",
     "no such handle",
+    "no such intercept",
     "no such node",
     "no such script",
     "session not created",
@@ -252,6 +256,7 @@ export const BrowsingContextCommandSchema = z.lazy(() =>
     BrowsingContext.NavigateSchema,
     BrowsingContext.PrintSchema,
     BrowsingContext.ReloadSchema,
+    BrowsingContext.SetViewportSchema,
   ])
 );
 export const BrowsingContextResultSchema = z.lazy(() =>
@@ -482,6 +487,11 @@ export namespace BrowsingContext {
   );
 }
 export namespace BrowsingContext {
+  export const PageRangeSchema = z.lazy(() =>
+    z.string().regex(new RegExp("^(?:[0-9]+)?(?:-(?:[0-9]+)?)?$"))
+  );
+}
+export namespace BrowsingContext {
   export const PrintParametersSchema = z.lazy(() =>
     z.object({
       context: BrowsingContext.BrowsingContextSchema,
@@ -492,7 +502,9 @@ export namespace BrowsingContext {
         .default("portrait")
         .optional(),
       page: BrowsingContext.PrintPageParametersSchema.optional(),
-      pageRanges: z.array(z.union([JsUintSchema, z.string()])).optional(),
+      pageRanges: z
+        .array(z.union([JsUintSchema, BrowsingContext.PageRangeSchema]))
+        .optional(),
       scale: z.number().gte(0.1).lte(2).default(1).optional(),
       shrinkToFit: z.boolean().default(true).optional(),
     })
@@ -670,24 +682,76 @@ export namespace BrowsingContext {
     })
   );
 }
-export const NetworkCommandSchema = z.lazy(() => z.object({}));
+export const NetworkCommandSchema = z.lazy(() =>
+  z.union([
+    Network.AddInterceptSchema,
+    Network.ContinueRequestSchema,
+    Network.ContinueResponseSchema,
+    Network.ContinueWithAuthSchema,
+    Network.FailRequestSchema,
+    Network.ProvideResponseSchema,
+    Network.RemoveInterceptSchema,
+    z.object({}),
+  ])
+);
 export const NetworkResultSchema = z.lazy(() => z.object({}));
 export const NetworkEventSchema = z.lazy(() =>
   z.union([
+    Network.AuthRequiredSchema,
     Network.BeforeRequestSentSchema,
     Network.FetchErrorSchema,
-    Network.ResponseStartedSchema,
     Network.ResponseCompletedSchema,
+    Network.ResponseStartedSchema,
   ])
 );
+export namespace Network {
+  export const AuthChallengeSchema = z.lazy(() =>
+    z.object({
+      scheme: z.string(),
+      realm: z.string(),
+    })
+  );
+}
+export namespace Network {
+  export const AuthCredentialsSchema = z.lazy(() =>
+    z.object({
+      type: z.literal("password"),
+      username: z.string(),
+      password: z.string(),
+    })
+  );
+}
 export namespace Network {
   export const BaseParametersSchema = z.lazy(() =>
     z.object({
       context: z.union([BrowsingContext.BrowsingContextSchema, z.null()]),
+      isBlocked: z.boolean(),
       navigation: z.union([BrowsingContext.NavigationSchema, z.null()]),
       redirectCount: JsUintSchema,
       request: Network.RequestDataSchema,
       timestamp: JsUintSchema,
+      intercepts: z.array(Network.InterceptSchema).optional(),
+    })
+  );
+}
+export namespace Network {
+  export const BytesValueSchema = z.lazy(() =>
+    z.union([Network.StringValueSchema, Network.Base64ValueSchema])
+  );
+}
+export namespace Network {
+  export const StringValueSchema = z.lazy(() =>
+    z.object({
+      type: z.literal("string"),
+      value: z.string(),
+    })
+  );
+}
+export namespace Network {
+  export const Base64ValueSchema = z.lazy(() =>
+    z.object({
+      type: z.literal("base64"),
+      value: z.string(),
     })
   );
 }
@@ -695,8 +759,7 @@ export namespace Network {
   export const CookieSchema = z.lazy(() =>
     z.object({
       name: z.string(),
-      value: z.string().optional(),
-      binaryValue: z.tuple([z.number().int().nonnegative()]).optional(),
+      value: Network.BytesValueSchema,
       domain: z.string(),
       path: z.string(),
       expires: JsUintSchema.optional(),
@@ -730,8 +793,7 @@ export namespace Network {
   export const HeaderSchema = z.lazy(() =>
     z.object({
       name: z.string(),
-      value: z.string().optional(),
-      binaryValue: z.tuple([z.number().int().nonnegative()]).optional(),
+      value: Network.BytesValueSchema,
     })
   );
 }
@@ -745,6 +807,9 @@ export namespace Network {
       request: Network.RequestSchema.optional(),
     })
   );
+}
+export namespace Network {
+  export const InterceptSchema = z.lazy(() => z.string());
 }
 export namespace Network {
   export const RequestSchema = z.lazy(() => z.string());
@@ -784,7 +849,177 @@ export namespace Network {
       headersSize: z.union([JsUintSchema, z.null()]),
       bodySize: z.union([JsUintSchema, z.null()]),
       content: Network.ResponseContentSchema,
+      authChallenge: Network.AuthChallengeSchema.optional(),
     })
+  );
+}
+export namespace Network {
+  export const AddInterceptSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.addIntercept"),
+      params: Network.AddInterceptParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const AddInterceptParametersSchema = z.lazy(() =>
+    z.object({
+      phases: z.array(Network.InterceptPhaseSchema),
+      urlPatterns: z.array(z.string()).optional(),
+    })
+  );
+}
+export namespace Network {
+  export const InterceptPhaseSchema = z.lazy(() =>
+    z.enum(["beforeRequestSent", "responseStarted", "authRequired"])
+  );
+}
+export namespace Network {
+  export const AddInterceptResultSchema = z.lazy(() =>
+    z.object({
+      intercept: Network.InterceptSchema,
+    })
+  );
+}
+export namespace Network {
+  export const ContinueRequestSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.continueRequest"),
+      params: Network.ContinueRequestParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const ContinueRequestParametersSchema = z.lazy(() =>
+    z.object({
+      request: Network.RequestSchema,
+      body: Network.BytesValueSchema.optional(),
+      headers: z.array(Network.HeaderSchema).optional(),
+      method: z.string().optional(),
+      url: z.string().optional(),
+    })
+  );
+}
+export namespace Network {
+  export const ContinueResponseSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.continueResponse"),
+      params: Network.ContinueResponseParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const ContinueResponseParametersSchema = z.lazy(() =>
+    z.object({
+      request: Network.RequestSchema,
+      credentials: Network.AuthCredentialsSchema.optional(),
+      headers: z.array(Network.HeaderSchema).optional(),
+      reasonPhrase: z.string().optional(),
+      statusCode: JsUintSchema.optional(),
+    })
+  );
+}
+export namespace Network {
+  export const ContinueWithAuthSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.continueWithAuth"),
+      params: Network.ContinueWithAuthParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const ContinueWithAuthParametersSchema = z.lazy(() =>
+    z
+      .object({
+        request: Network.RequestSchema,
+      })
+      .and(
+        z.union([
+          Network.ContinueWithAuthCredentialsSchema,
+          Network.ContinueWithAuthNoCredentialsSchema,
+        ])
+      )
+  );
+}
+export namespace Network {
+  export const ContinueWithAuthCredentialsSchema = z.lazy(() =>
+    z.object({
+      action: z.literal("provideCredentials"),
+      credentials: Network.AuthCredentialsSchema,
+    })
+  );
+}
+export namespace Network {
+  export const ContinueWithAuthNoCredentialsSchema = z.lazy(() =>
+    z.object({
+      action: z.enum(["default", "cancel"]),
+    })
+  );
+}
+export namespace Network {
+  export const FailRequestSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.failRequest"),
+      params: Network.FailRequestParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const FailRequestParametersSchema = z.lazy(() =>
+    z.object({
+      request: Network.RequestSchema,
+    })
+  );
+}
+export namespace Network {
+  export const ProvideResponseSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.provideResponse"),
+      params: Network.ProvideResponseParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const ProvideResponseParametersSchema = z.lazy(() =>
+    z.object({
+      request: Network.RequestSchema,
+      body: Network.BytesValueSchema.optional(),
+      headers: z.array(Network.HeaderSchema).optional(),
+      reasonPhrase: z.string().optional(),
+      statusCode: JsUintSchema.optional(),
+    })
+  );
+}
+export namespace Network {
+  export const RemoveInterceptSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.removeIntercept"),
+      params: Network.RemoveInterceptParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const RemoveInterceptParametersSchema = z.lazy(() =>
+    z.object({
+      intercept: Network.InterceptSchema,
+    })
+  );
+}
+export namespace Network {
+  export const AuthRequiredSchema = z.lazy(() =>
+    z.object({
+      method: z.literal("network.authRequired"),
+      params: Network.AuthRequiredParametersSchema,
+    })
+  );
+}
+export namespace Network {
+  export const AuthRequiredParametersSchema = z.lazy(() =>
+    Network.BaseParametersSchema.and(
+      z.object({
+        response: Network.ResponseDataSchema,
+      })
+    )
   );
 }
 export namespace Network {
@@ -873,7 +1108,11 @@ export const ScriptResultSchema = z.lazy(() =>
   ])
 );
 export const ScriptEventSchema = z.lazy(() =>
-  z.union([Script.RealmCreatedSchema, Script.RealmDestroyedSchema])
+  z.union([
+    Script.MessageSchema,
+    Script.RealmCreatedSchema,
+    Script.RealmDestroyedSchema,
+  ])
 );
 export namespace Script {
   export const ChannelSchema = z.lazy(() => z.string());
@@ -938,7 +1177,9 @@ export namespace Script {
 export namespace Script {
   export const LocalValueSchema = z.lazy(() =>
     z.union([
+      Script.RemoteReferenceSchema,
       Script.PrimitiveProtocolValueSchema,
+      Script.ChannelValueSchema,
       Script.ArrayLocalValueSchema,
       Script.DateLocalValueSchema,
       Script.MapLocalValueSchema,
@@ -1592,7 +1833,7 @@ export namespace Script {
 export namespace Script {
   export const DisownParametersSchema = z.lazy(() =>
     z.object({
-      handles: z.tuple([Script.HandleSchema]),
+      handles: z.array(Script.HandleSchema),
       target: Script.TargetSchema,
     })
   );
@@ -1611,20 +1852,11 @@ export namespace Script {
       functionDeclaration: z.string(),
       awaitPromise: z.boolean(),
       target: Script.TargetSchema,
-      arguments: z.array(Script.ArgumentValueSchema).optional(),
+      arguments: z.array(Script.LocalValueSchema).optional(),
       resultOwnership: Script.ResultOwnershipSchema.optional(),
       serializationOptions: Script.SerializationOptionsSchema.optional(),
-      this: Script.ArgumentValueSchema.optional(),
+      this: Script.LocalValueSchema.optional(),
     })
-  );
-}
-export namespace Script {
-  export const ArgumentValueSchema = z.lazy(() =>
-    z.union([
-      Script.RemoteReferenceSchema,
-      Script.LocalValueSchema,
-      Script.ChannelValueSchema,
-    ])
   );
 }
 export namespace Script {
@@ -1712,7 +1944,7 @@ export namespace Script {
 export namespace Script {
   export const RealmDestroyedSchema = z.lazy(() =>
     z.object({
-      method: z.literal("script.realmDestoyed"),
+      method: z.literal("script.realmDestroyed"),
       params: Script.RealmDestroyedParametersSchema,
     })
   );

@@ -53,6 +53,7 @@ export const enum ErrorCode {
   NoSuchElement = "no such element",
   NoSuchFrame = "no such frame",
   NoSuchHandle = "no such handle",
+  NoSuchIntercept = "no such intercept",
   NoSuchNode = "no such node",
   NoSuchScript = "no such script",
   SessionNotCreated = "session not created",
@@ -88,10 +89,10 @@ export namespace Session {
       httpProxy?: string;
       noProxy?: [...string[]];
       sslProxy?: string;
-      socksProxy?: string;
+      socksProxy?: string
       /**
        * Must be between `0` and `255`, inclusive.
-       */
+       */;
       socksVersion?: number;
     };
   } & Extensible;
@@ -140,10 +141,10 @@ export namespace Session {
         httpProxy?: string;
         noProxy?: [...string[]];
         sslProxy?: string;
-        socksProxy?: string;
+        socksProxy?: string
         /**
          * Must be between `0` and `255`, inclusive.
-         */
+         */;
         socksVersion?: number;
       };
       setWindowRect: boolean;
@@ -183,7 +184,8 @@ export type BrowsingContextCommand =
   | BrowsingContext.HandleUserPrompt
   | BrowsingContext.Navigate
   | BrowsingContext.Print
-  | BrowsingContext.Reload;
+  | BrowsingContext.Reload
+  | BrowsingContext.SetViewport;
 export type BrowsingContextResult =
   | BrowsingContext.CaptureScreenshotResult
   | BrowsingContext.CreateResult
@@ -362,28 +364,34 @@ export namespace BrowsingContext {
   };
 }
 export namespace BrowsingContext {
+  /**
+   * Must match the pattern `"^(?:[0-9]+)?(?:-(?:[0-9]+)?)?$"`.
+   */
+  export type PageRange = string;
+}
+export namespace BrowsingContext {
   export type PrintParameters = {
-    context: BrowsingContext.BrowsingContext;
+    context: BrowsingContext.BrowsingContext
     /**
      * @defaultValue `false`
-     */
+     */;
     background?: boolean;
-    margin?: BrowsingContext.PrintMarginParameters;
+    margin?: BrowsingContext.PrintMarginParameters
     /**
      * @defaultValue `"portrait"`
-     */
+     */;
     orientation?: "portrait" | "landscape";
     page?: BrowsingContext.PrintPageParameters;
-    pageRanges?: [...(JsUint | string)[]];
+    pageRanges?: [...(JsUint | BrowsingContext.PageRange)[]]
     /**
      * Must be between `0.1` and `2`, inclusive.
      *
      * @defaultValue `1`
-     */
-    scale?: number;
+     */;
+    scale?: number
     /**
      * @defaultValue `true`
-     */
+     */;
     shrinkToFit?: boolean;
   };
 }
@@ -394,24 +402,24 @@ export namespace BrowsingContext {
      *
      * @defaultValue `1`
      */
-    bottom?: number;
+    bottom?: number
     /**
      * Must be greater than or equal to `0`.
      *
      * @defaultValue `1`
-     */
-    left?: number;
+     */;
+    left?: number
     /**
      * Must be greater than or equal to `0`.
      *
      * @defaultValue `1`
-     */
-    right?: number;
+     */;
+    right?: number
     /**
      * Must be greater than or equal to `0`.
      *
      * @defaultValue `1`
-     */
+     */;
     top?: number;
   };
 }
@@ -422,12 +430,12 @@ export namespace BrowsingContext {
      *
      * @defaultValue `27.94`
      */
-    height?: number;
+    height?: number
     /**
      * Must be greater than or equal to `0`.
      *
      * @defaultValue `21.59`
-     */
+     */;
     width?: number;
   };
 }
@@ -547,27 +555,65 @@ export namespace BrowsingContext {
     message: string;
   };
 }
-export type NetworkCommand = {};
+export type NetworkCommand =
+  | Network.AddIntercept
+  | Network.ContinueRequest
+  | Network.ContinueResponse
+  | Network.ContinueWithAuth
+  | Network.FailRequest
+  | Network.ProvideResponse
+  | Network.RemoveIntercept
+  | {};
 export type NetworkResult = {};
 export type NetworkEvent =
+  | Network.AuthRequired
   | Network.BeforeRequestSent
   | Network.FetchError
-  | Network.ResponseStarted
-  | Network.ResponseCompleted;
+  | Network.ResponseCompleted
+  | Network.ResponseStarted;
+export namespace Network {
+  export type AuthChallenge = {
+    scheme: string;
+    realm: string;
+  };
+}
+export namespace Network {
+  export type AuthCredentials = {
+    type: "password";
+    username: string;
+    password: string;
+  };
+}
 export namespace Network {
   export type BaseParameters = {
     context: BrowsingContext.BrowsingContext | null;
+    isBlocked: boolean;
     navigation: BrowsingContext.Navigation | null;
     redirectCount: JsUint;
     request: Network.RequestData;
     timestamp: JsUint;
+    intercepts?: [...Network.Intercept[]];
+  };
+}
+export namespace Network {
+  export type BytesValue = Network.StringValue | Network.Base64Value;
+}
+export namespace Network {
+  export type StringValue = {
+    type: "string";
+    value: string;
+  };
+}
+export namespace Network {
+  export type Base64Value = {
+    type: "base64";
+    value: string;
   };
 }
 export namespace Network {
   export type Cookie = {
     name: string;
-    value?: string;
-    binaryValue?: [number];
+    value: Network.BytesValue;
     domain: string;
     path: string;
     expires?: JsUint;
@@ -597,8 +643,7 @@ export namespace Network {
 export namespace Network {
   export type Header = {
     name: string;
-    value?: string;
-    binaryValue?: [number];
+    value: Network.BytesValue;
   };
 }
 export namespace Network {
@@ -609,6 +654,9 @@ export namespace Network {
     stackTrace?: Script.StackTrace;
     request?: Network.Request;
   };
+}
+export namespace Network {
+  export type Intercept = string;
 }
 export namespace Network {
   export type Request = string;
@@ -643,6 +691,133 @@ export namespace Network {
     headersSize: JsUint | null;
     bodySize: JsUint | null;
     content: Network.ResponseContent;
+    authChallenge?: Network.AuthChallenge;
+  };
+}
+export namespace Network {
+  export type AddIntercept = {
+    method: "network.addIntercept";
+    params: Network.AddInterceptParameters;
+  };
+}
+export namespace Network {
+  export type AddInterceptParameters = {
+    phases: [...Network.InterceptPhase[]];
+    urlPatterns?: [...string[]];
+  };
+}
+export namespace Network {
+  export type InterceptPhase =
+    | "beforeRequestSent"
+    | "responseStarted"
+    | "authRequired";
+}
+export namespace Network {
+  export type AddInterceptResult = {
+    intercept: Network.Intercept;
+  };
+}
+export namespace Network {
+  export type ContinueRequest = {
+    method: "network.continueRequest";
+    params: Network.ContinueRequestParameters;
+  };
+}
+export namespace Network {
+  export type ContinueRequestParameters = {
+    request: Network.Request;
+    body?: Network.BytesValue;
+    headers?: [...Network.Header[]];
+    method?: string;
+    url?: string;
+  };
+}
+export namespace Network {
+  export type ContinueResponse = {
+    method: "network.continueResponse";
+    params: Network.ContinueResponseParameters;
+  };
+}
+export namespace Network {
+  export type ContinueResponseParameters = {
+    request: Network.Request;
+    credentials?: Network.AuthCredentials;
+    headers?: [...Network.Header[]];
+    reasonPhrase?: string;
+    statusCode?: JsUint;
+  };
+}
+export namespace Network {
+  export type ContinueWithAuth = {
+    method: "network.continueWithAuth";
+    params: Network.ContinueWithAuthParameters;
+  };
+}
+export namespace Network {
+  export type ContinueWithAuthParameters = {
+    request: Network.Request;
+  } & (
+    | Network.ContinueWithAuthCredentials
+    | Network.ContinueWithAuthNoCredentials
+  );
+}
+export namespace Network {
+  export type ContinueWithAuthCredentials = {
+    action: "provideCredentials";
+    credentials: Network.AuthCredentials;
+  };
+}
+export namespace Network {
+  export type ContinueWithAuthNoCredentials = {
+    action: "default" | "cancel";
+  };
+}
+export namespace Network {
+  export type FailRequest = {
+    method: "network.failRequest";
+    params: Network.FailRequestParameters;
+  };
+}
+export namespace Network {
+  export type FailRequestParameters = {
+    request: Network.Request;
+  };
+}
+export namespace Network {
+  export type ProvideResponse = {
+    method: "network.provideResponse";
+    params: Network.ProvideResponseParameters;
+  };
+}
+export namespace Network {
+  export type ProvideResponseParameters = {
+    request: Network.Request;
+    body?: Network.BytesValue;
+    headers?: [...Network.Header[]];
+    reasonPhrase?: string;
+    statusCode?: JsUint;
+  };
+}
+export namespace Network {
+  export type RemoveIntercept = {
+    method: "network.removeIntercept";
+    params: Network.RemoveInterceptParameters;
+  };
+}
+export namespace Network {
+  export type RemoveInterceptParameters = {
+    intercept: Network.Intercept;
+  };
+}
+export namespace Network {
+  export type AuthRequired = {
+    method: "network.authRequired";
+    params: Network.AuthRequiredParameters;
+  };
+}
+export namespace Network {
+  export type AuthRequiredParameters = Network.BaseParameters & {
+    response: Network.ResponseData;
   };
 }
 export namespace Network {
@@ -700,7 +875,10 @@ export type ScriptResult =
   | Script.AddPreloadScriptResult
   | Script.EvaluateResult
   | Script.GetRealmsResult;
-export type ScriptEvent = Script.RealmCreated | Script.RealmDestroyed;
+export type ScriptEvent =
+  | Script.Message
+  | Script.RealmCreated
+  | Script.RealmDestroyed;
 export namespace Script {
   export type Channel = string;
 }
@@ -750,7 +928,9 @@ export namespace Script {
 }
 export namespace Script {
   export type LocalValue =
+    | Script.RemoteReference
     | Script.PrimitiveProtocolValue
+    | Script.ChannelValue
     | Script.ArrayLocalValue
     | Script.DateLocalValue
     | Script.MapLocalValue
@@ -1168,14 +1348,14 @@ export namespace Script {
     /**
      * @defaultValue `0`
      */
-    maxDomDepth?: JsUint | null;
+    maxDomDepth?: JsUint | null
     /**
      * @defaultValue `null`
-     */
-    maxObjectDepth?: JsUint | null;
+     */;
+    maxObjectDepth?: JsUint | null
     /**
      * @defaultValue `"none"`
-     */
+     */;
     includeShadowTree?: "none" | "open" | "all";
   };
 }
@@ -1241,7 +1421,7 @@ export namespace Script {
 }
 export namespace Script {
   export type DisownParameters = {
-    handles: [Script.Handle];
+    handles: [...Script.Handle[]];
     target: Script.Target;
   };
 }
@@ -1256,17 +1436,11 @@ export namespace Script {
     functionDeclaration: string;
     awaitPromise: boolean;
     target: Script.Target;
-    arguments?: [...Script.ArgumentValue[]];
+    arguments?: [...Script.LocalValue[]];
     resultOwnership?: Script.ResultOwnership;
     serializationOptions?: Script.SerializationOptions;
-    this?: Script.ArgumentValue;
+    this?: Script.LocalValue;
   };
-}
-export namespace Script {
-  export type ArgumentValue =
-    | Script.RemoteReference
-    | Script.LocalValue
-    | Script.ChannelValue;
 }
 export namespace Script {
   export type Evaluate = {
@@ -1332,7 +1506,7 @@ export namespace Script {
 }
 export namespace Script {
   export type RealmDestroyed = {
-    method: "script.realmDestoyed";
+    method: "script.realmDestroyed";
     params: Script.RealmDestroyedParameters;
   };
 }
@@ -1523,10 +1697,10 @@ export namespace Input {
     y: JsInt;
     deltaX: JsInt;
     deltaY: JsInt;
-    duration?: JsUint;
+    duration?: JsUint
     /**
      * @defaultValue `"viewport"`
-     */
+     */;
     origin?: Input.Origin;
   };
 }
@@ -1535,24 +1709,24 @@ export namespace Input {
     /**
      * @defaultValue `1`
      */
-    width?: JsUint;
+    width?: JsUint
     /**
      * @defaultValue `1`
-     */
-    height?: JsUint;
+     */;
+    height?: JsUint
     /**
      * @defaultValue `0`
-     */
-    pressure?: number;
+     */;
+    pressure?: number
     /**
      * @defaultValue `0`
-     */
-    tangentialPressure?: number;
+     */;
+    tangentialPressure?: number
     /**
      * Must be between `0` and `359`, inclusive.
      *
      * @defaultValue `0`
-     */
+     */;
     twist?: number;
   } & (Input.TiltProperties | Input.AngleProperties);
 }
@@ -1561,10 +1735,10 @@ export namespace Input {
     /**
      * @defaultValue `0`
      */
-    altitudeAngle?: number;
+    altitudeAngle?: number
     /**
      * @defaultValue `0`
-     */
+     */;
     azimuthAngle?: number;
   };
 }
@@ -1575,12 +1749,12 @@ export namespace Input {
      *
      * @defaultValue `0`
      */
-    tiltX?: number;
+    tiltX?: number
     /**
      * Must be between `-90` and `90`, inclusive.
      *
      * @defaultValue `0`
-     */
+     */;
     tiltY?: number;
   };
 }

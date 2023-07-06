@@ -73,6 +73,7 @@ ErrorCode = "invalid argument" /
             "no such element" /
             "no such frame" /
             "no such handle" /
+            "no such intercept" /
             "no such node" /
             "no such script" /
             "session not created" /
@@ -198,7 +199,8 @@ BrowsingContextCommand = (
   browsingContext.HandleUserPrompt //
   browsingContext.Navigate //
   browsingContext.Print //
-  browsingContext.Reload
+  browsingContext.Reload //
+  browsingContext.SetViewport
 )
 
 BrowsingContextResult = (
@@ -349,13 +351,15 @@ browsingContext.Print = {
   params: browsingContext.PrintParameters
 }
 
+browsingContext.PageRange = text .regexp "^(?:[0-9]+)?(?:-(?:[0-9]+)?)?$"
+
 browsingContext.PrintParameters = {
   context: browsingContext.BrowsingContext,
   ? background: bool .default false,
   ? margin: browsingContext.PrintMarginParameters,
   ? orientation: ("portrait" / "landscape") .default "portrait",
   ? page: browsingContext.PrintPageParameters,
-  ? pageRanges: [*(js-uint / text)],
+  ? pageRanges: [*(js-uint / browsingContext.PageRange )],
   ? scale: (0.1..2.0) .default 1.0,
   ? shrinkToFit: bool .default true,
 }
@@ -471,6 +475,13 @@ browsingContext.UserPromptOpenedParameters = {
 
 
 NetworkCommand = (
+  network.AddIntercept //
+  network.ContinueRequest //
+  network.ContinueResponse //
+  network.ContinueWithAuth //
+  network.FailRequest //
+  network.ProvideResponse //
+  network.RemoveIntercept //
 )
 
 
@@ -479,25 +490,50 @@ NetworkResult = (
 )
 
 NetworkEvent = (
+    network.AuthRequired //
     network.BeforeRequestSent //
     network.FetchError //
-    network.ResponseStarted //
-    network.ResponseCompleted
+    network.ResponseCompleted //
+    network.ResponseStarted
 )
 
 
+network.AuthChallenge = {
+  scheme: text,
+  realm: text,
+}
+
+network.AuthCredentials = {
+  type: "password",
+  username: text,
+  password: text,
+}
+
 network.BaseParameters = (
     context: browsingContext.BrowsingContext / null,
+    isBlocked: bool,
     navigation: browsingContext.Navigation / null,
     redirectCount: js-uint,
     request: network.RequestData,
     timestamp: js-uint,
+    ?intercepts: [*network.Intercept]
 )
+
+network.BytesValue = network.StringValue / network.Base64Value;
+
+network.StringValue = {
+  type: "string",
+  value: text,
+}
+
+network.Base64Value = {
+  type: "base64",
+  value: text,
+}
 
 network.Cookie = {
     name: text,
-    ? value: text,
-    ? binaryValue: [ uint ]
+    value: network.BytesValue,
     domain: text,
     path: text,
     ? expires: js-uint,
@@ -526,10 +562,9 @@ network.FetchTimingInfo = {
 };
 
 network.Header = {
-    name: text,
-    ? value: text,
-    ? binaryValue: [ uint ]
-};
+  name: text,
+  value: network.BytesValue
+}
 
 network.Initiator = {
     type: "parser" / "script" / "preflight" / "other",
@@ -538,6 +573,8 @@ network.Initiator = {
     ? stackTrace: script.StackTrace,
     ? request: network.Request
 };
+
+network.Intercept = text
 
 network.Request = text;
 
@@ -567,8 +604,113 @@ network.ResponseData = {
     bytesReceived: js-uint,
     headersSize: js-uint / null,
     bodySize: js-uint / null,
-    content: network.ResponseContent
+    content: network.ResponseContent,
+    ?authChallenge: network.AuthChallenge,
 };
+
+network.AddIntercept = {
+  method: "network.addIntercept",
+  params: network.AddInterceptParameters
+}
+
+network.AddInterceptParameters = {
+  phases: [*network.InterceptPhase],
+  ?urlPatterns: [*text],
+}
+
+network.InterceptPhase = ("beforeRequestSent" /
+                          "responseStarted" /
+                          "authRequired")
+
+network.AddInterceptResult = {
+  intercept: network.Intercept
+}
+
+network.ContinueRequest = {
+  method: "network.continueRequest",
+  params: network.ContinueRequestParameters
+}
+
+network.ContinueRequestParameters = {
+  request: network.Request,
+  ?body: network.BytesValue,
+  ?headers: [*network.Header],
+  ?method: text,
+  ?url: text,
+}
+
+network.ContinueResponse = {
+  method: "network.continueResponse",
+  params: network.ContinueResponseParameters
+}
+
+network.ContinueResponseParameters = {
+  request: network.Request,
+  ?credentials: network.AuthCredentials,
+  ?headers: [*network.Header],
+  ?reasonPhrase: text,
+  ?statusCode: js-uint,
+}
+
+network.ContinueWithAuth = {
+  method: "network.continueWithAuth",
+  params: network.ContinueWithAuthParameters
+}
+
+network.ContinueWithAuthParameters = {
+  request: network.Request,
+  (network.ContinueWithAuthCredentials // network.ContinueWithAuthNoCredentials)
+}
+
+network.ContinueWithAuthCredentials = {
+  action: "provideCredentials", 
+  credentials: network.AuthCredentials
+}
+
+network.ContinueWithAuthNoCredentials = {
+  action: "default" / "cancel"
+}
+
+network.FailRequest = {
+  method: "network.failRequest",
+  params: network.FailRequestParameters
+}
+
+network.FailRequestParameters = {
+  request: network.Request,
+}
+
+network.ProvideResponse = {
+  method: "network.provideResponse",
+  params: network.ProvideResponseParameters
+}
+
+network.ProvideResponseParameters = {
+  request: network.Request,
+  ?body: network.BytesValue,
+  ?headers: [*network.Header],
+  ?reasonPhrase: text,
+  ?statusCode: js-uint,
+}
+
+network.RemoveIntercept = {
+  method: "network.removeIntercept",
+  params: network.RemoveInterceptParameters
+}
+
+network.RemoveInterceptParameters = {
+  intercept: network.Intercept
+}
+
+network.AuthRequired = {
+  method: "network.authRequired",
+  params: network.AuthRequiredParameters
+}
+
+network.AuthRequiredParameters = {
+  network.BaseParameters,
+  response: network.ResponseData
+}
 
  network.BeforeRequestSent = {
   method: "network.beforeRequestSent",
@@ -626,6 +768,7 @@ ScriptResult = (
 )
 
 ScriptEvent = (
+  script.Message //
   script.RealmCreated //
   script.RealmDestroyed
 )
@@ -671,7 +814,9 @@ script.ExceptionDetails = {
 script.Handle = text;
 
 script.LocalValue = (
+  script.RemoteReference //
   script.PrimitiveProtocolValue //
+  script.ChannelValue //
   script.ArrayLocalValue //
   script.DateLocalValue //
   script.MapLocalValue //
@@ -1085,7 +1230,7 @@ script.Disown = {
 }
 
 script.DisownParameters = {
-  handles: [script.Handle]
+  handles: [*script.Handle]
   target: script.Target;
 }
 
@@ -1098,18 +1243,11 @@ script.CallFunctionParameters = {
   functionDeclaration: text,
   awaitPromise: bool,
   target: script.Target,
-  ? arguments: [*script.ArgumentValue],
+  ? arguments: [*script.LocalValue],
   ? resultOwnership: script.ResultOwnership,
   ? serializationOptions: script.SerializationOptions,
-  ? this: script.ArgumentValue,
+  ? this: script.LocalValue,
 }
-
-script.ArgumentValue = (
-  script.RemoteReference //
-  script.LocalValue //
-  script.ChannelValue
-);
-
 
 script.Evaluate = {
   method: "script.evaluate",
@@ -1164,7 +1302,7 @@ script.MessageParameters = {
 }
 
 script.RealmDestroyed = {
-  method: "script.realmDestoyed",
+  method: "script.realmDestroyed",
   params: script.RealmDestroyedParameters
 }
 
