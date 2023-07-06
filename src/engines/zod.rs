@@ -88,16 +88,15 @@ impl<'a, 'b: 'a, 'c> Engine {
         }
     }
     pub fn print_preamble() {
+        println!("// eslint-disable-next-line @typescript-eslint/ban-ts-comment");
+        println!("// @ts-nocheck Some types may be circular.");
+        println!();
         println!("import z from 'zod';");
     }
     pub fn print_postamble(&mut self) {
         #[cfg(feature = "vector_groups")]
         if self.postamble_options.print_flatten {
-            print!(
-                "export type Flatten<T extends unknown[]> = T extends (infer S)[][] \
-                    ? S[] \
-                    : never;"
-            )
+            unimplemented!();
         }
     }
     fn visit_maybe_enum_type(&mut self, t: &'b cddl::ast::Type<'a>) -> bool {
@@ -729,9 +728,9 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                         print!(")");
                     }
                     cddl::token::ControlOperator::PCRE | cddl::token::ControlOperator::REGEXP => {
-                        print!(".regex(/");
+                        print!(".regex(new RegExp(");
                         self.visit_type2(&op.type2)?;
-                        print!("/)");
+                        print!("))");
                     }
                     cddl::token::ControlOperator::LT => {
                         print!(".lt(");
