@@ -94,10 +94,11 @@ impl<'a, 'b: 'a, 'c> Engine {
     }
     fn visit_maybe_enum_type(&mut self, t: &'b cddl::ast::Type<'a>) -> bool {
         // Special case for string enums
-        if t.type_choices
-            .iter()
-            .map(|choice| &choice.type1.type2)
-            .all(|type2| matches!(type2, cddl::ast::Type2::TextValue { .. }))
+        if t.type_choices.len() > 1
+            && t.type_choices
+                .iter()
+                .map(|choice| &choice.type1.type2)
+                .all(|type2| matches!(type2, cddl::ast::Type2::TextValue { .. }))
         {
             print!("z.enum([");
             for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
