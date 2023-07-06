@@ -570,7 +570,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         //
         // This requires us to build to types in case of usage: one for use as a
         // map and the other for use as an array.
-        println!("export type ");
+        print!("export type ");
         self.visit_identifier_with_params(
             &cddl::ast::Identifier {
                 ident: &type_name,
