@@ -115,13 +115,7 @@ export namespace Session {
         proxy: z
           .object({
             proxyType: z
-              .union([
-                z.literal("pac"),
-                z.literal("direct"),
-                z.literal("autodetect"),
-                z.literal("system"),
-                z.literal("manual"),
-              ])
+              .enum(["pac", "direct", "autodetect", "system", "manual"])
               .optional(),
             proxyAutoconfigUrl: z.string().optional(),
             ftpProxy: z.string().optional(),
@@ -187,13 +181,7 @@ export namespace Session {
           platformName: z.string(),
           proxy: z.object({
             proxyType: z
-              .union([
-                z.literal("pac"),
-                z.literal("direct"),
-                z.literal("autodetect"),
-                z.literal("system"),
-                z.literal("manual"),
-              ])
+              .enum(["pac", "direct", "autodetect", "system", "manual"])
               .optional(),
             proxyAutoconfigUrl: z.string().optional(),
             ftpProxy: z.string().optional(),
@@ -665,12 +653,7 @@ export namespace BrowsingContext {
   export const UserPromptOpenedParametersSchema = z.lazy(() =>
     z.object({
       context: BrowsingContext.BrowsingContextSchema,
-      type: z.union([
-        z.literal("alert"),
-        z.literal("confirm"),
-        z.literal("prompt"),
-        z.literal("beforeunload"),
-      ]),
+      type: z.enum(["alert", "confirm", "prompt", "beforeunload"]),
       message: z.string(),
     })
   );
@@ -708,11 +691,7 @@ export namespace Network {
       size: JsUintSchema,
       httpOnly: z.boolean(),
       secure: z.boolean(),
-      sameSite: z.union([
-        z.literal("strict"),
-        z.literal("lax"),
-        z.literal("none"),
-      ]),
+      sameSite: z.enum(["strict", "lax", "none"]),
     })
   );
 }
@@ -747,12 +726,7 @@ export namespace Network {
 export namespace Network {
   export const InitiatorSchema = z.lazy(() =>
     z.object({
-      type: z.union([
-        z.literal("parser"),
-        z.literal("script"),
-        z.literal("preflight"),
-        z.literal("other"),
-      ]),
+      type: z.enum(["parser", "script", "preflight", "other"]),
       columnNumber: JsUintSchema.optional(),
       lineNumber: JsUintSchema.optional(),
       stackTrace: Script.StackTraceSchema.optional(),
@@ -1481,7 +1455,7 @@ export namespace Script {
       attributes: z.record(z.string(), z.string()).optional(),
       children: z.array(Script.NodeRemoteValueSchema).optional(),
       localName: z.string().optional(),
-      mode: z.union([z.literal("open"), z.literal("closed")]).optional(),
+      mode: z.enum(["open", "closed"]).optional(),
       namespaceURI: z.string().optional(),
       nodeValue: z.string().optional(),
       shadowRoot: z.union([Script.NodeRemoteValueSchema, z.null()]).optional(),
