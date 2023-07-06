@@ -60,10 +60,10 @@ export const EventDataSchema = z.lazy(() =>
 );
 export const ExtensibleSchema = z.lazy(() => z.record(z.string(), z.any()));
 export const JsIntSchema = z.lazy(() =>
-  z.literal(-9007199254740991).gte(-9007199254740991).lte(9007199254740991)
+  z.number().int().gte(-9007199254740991).lte(9007199254740991)
 );
 export const JsUintSchema = z.lazy(() =>
-  z.literal(0).gte(0).lte(9007199254740991)
+  z.number().int().nonnegative().gte(0).lte(9007199254740991)
 );
 export const ErrorCodeSchema = z.lazy(() =>
   z.enum([
@@ -123,7 +123,13 @@ export namespace Session {
             noProxy: z.array(z.string()).optional(),
             sslProxy: z.string().optional(),
             socksProxy: z.string().optional(),
-            socksVersion: z.literal(0).gte(0).lte(255).optional(),
+            socksVersion: z
+              .number()
+              .int()
+              .nonnegative()
+              .gte(0)
+              .lte(255)
+              .optional(),
           })
           .optional(),
       })
@@ -189,7 +195,13 @@ export namespace Session {
             noProxy: z.array(z.string()).optional(),
             sslProxy: z.string().optional(),
             socksProxy: z.string().optional(),
-            socksVersion: z.literal(0).gte(0).lte(255).optional(),
+            socksVersion: z
+              .number()
+              .int()
+              .nonnegative()
+              .gte(0)
+              .lte(255)
+              .optional(),
           }),
           setWindowRect: z.boolean(),
         })
@@ -481,7 +493,7 @@ export namespace BrowsingContext {
         .optional(),
       page: BrowsingContext.PrintPageParametersSchema.optional(),
       pageRanges: z.array(z.union([JsUintSchema, z.string()])).optional(),
-      scale: z.literal(0.1).gte(0.1).lte(2).default(1).optional(),
+      scale: z.number().gte(0.1).lte(2).default(1).optional(),
       shrinkToFit: z.boolean().default(true).optional(),
     })
   );
@@ -1966,7 +1978,14 @@ export namespace Input {
         height: JsUintSchema.default(1).optional(),
         pressure: z.number().default(0).optional(),
         tangentialPressure: z.number().default(0).optional(),
-        twist: z.literal(0).gte(0).lte(359).default(0).optional(),
+        twist: z
+          .number()
+          .int()
+          .nonnegative()
+          .gte(0)
+          .lte(359)
+          .default(0)
+          .optional(),
       })
       .and(z.union([Input.TiltPropertiesSchema, Input.AnglePropertiesSchema]))
   );
@@ -1982,8 +2001,8 @@ export namespace Input {
 export namespace Input {
   export const TiltPropertiesSchema = z.lazy(() =>
     z.object({
-      tiltX: z.literal(-90).gte(-90).lte(90).default(0).optional(),
-      tiltY: z.literal(-90).gte(-90).lte(90).default(0).optional(),
+      tiltX: z.number().int().gte(-90).lte(90).default(0).optional(),
+      tiltY: z.number().int().gte(-90).lte(90).default(0).optional(),
     })
   );
 }
