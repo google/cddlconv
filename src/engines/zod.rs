@@ -118,15 +118,13 @@ impl<'a, 'b: 'a, 'c> Engine {
             in_and: false,
         });
         if gc.group_entries.is_empty() {
-            print!("z.array(z.never())");
-            self.nested_group_choices.pop();
-            return Ok(());
+            self.enter_tuple();
         }
         for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
             self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
             self.visit_array_entry(entry)?;
         }
-        self.exit_and();
+        self.exit_tuple();
         self.nested_group_choices.pop();
         Ok(())
     }
@@ -146,6 +144,23 @@ impl<'a, 'b: 'a, 'c> Engine {
                 }
             }
         }
+    }
+    fn enter_tuple(&mut self) {
+        if let Some(group) = self.nested_group_choices.last_mut() {
+            if !group.in_object {
+                println!("z.tuple([");
+                group.in_object = true;
+            }
+        }
+    }
+    fn exit_tuple(&mut self) {
+        if let Some(group) = self.nested_group_choices.last_mut() {
+            if group.in_object {
+                group.in_object = false;
+                print!("])");
+            }
+        }
+        self.exit_and();
     }
     fn enter_and(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
@@ -200,7 +215,6 @@ impl<'a, 'b: 'a, 'c> Engine {
         &mut self,
         entry: &'b cddl::ast::GroupEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.print_group_joiner();
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
                 self.visit_value_array_member_key_entry(ge)?;
@@ -209,6 +223,8 @@ impl<'a, 'b: 'a, 'c> Engine {
                 self.visit_type_arrayname_entry(ge)?;
             }
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
+                self.exit_tuple();
+                self.print_group_joiner();
                 self.visit_array(&group)?;
             }
         }
@@ -223,16 +239,18 @@ impl<'a, 'b: 'a, 'c> Engine {
         }
         match calculate_array_entry_occurence(&entry.occur) {
             (lower, upper) if lower == upper => {
-                print!("z.tuple([");
+                self.print_group_joiner();
+                self.enter_tuple();
                 for index in 0..lower {
                     if index != 0 {
                         print!(",");
                     }
                     self.visit_type(&entry.entry_type)?
                 }
-                print!("])");
             }
             (lower, upper) => {
+                self.exit_tuple();
+                self.print_group_joiner();
                 if upper < MAX_ARRAYS {
                     print!("z.union([");
                     for bound in lower..upper + 1 {
@@ -264,7 +282,8 @@ impl<'a, 'b: 'a, 'c> Engine {
     ) -> cddl::visitor::Result<Error> {
         match calculate_array_entry_occurence(&entry.occur) {
             (lower, upper) if lower == upper => {
-                print!("z.tuple([");
+                self.print_group_joiner();
+                self.enter_tuple();
                 for index in 0..lower {
                     if index != 0 {
                         print!(",");
@@ -275,9 +294,10 @@ impl<'a, 'b: 'a, 'c> Engine {
                         self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
                     }
                 }
-                print!("])");
             }
             (lower, upper) => {
+                self.exit_tuple();
+                self.print_group_joiner();
                 if upper < MAX_ARRAYS {
                     print!("z.union([");
                     for bound in lower..upper + 1 {
