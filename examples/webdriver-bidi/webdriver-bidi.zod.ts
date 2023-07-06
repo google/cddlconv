@@ -66,22 +66,22 @@ export const JsUintSchema = z.lazy(() =>
   z.literal(0).gte(0).lte(9007199254740991)
 );
 export const ErrorCodeSchema = z.lazy(() =>
-  z.union([
-    z.literal("invalid argument"),
-    z.literal("invalid session id"),
-    z.literal("move target out of bounds"),
-    z.literal("no such alert"),
-    z.literal("no such element"),
-    z.literal("no such frame"),
-    z.literal("no such handle"),
-    z.literal("no such node"),
-    z.literal("no such script"),
-    z.literal("session not created"),
-    z.literal("unable to capture screen"),
-    z.literal("unable to close browser"),
-    z.literal("unknown command"),
-    z.literal("unknown error"),
-    z.literal("unsupported operation"),
+  z.enum([
+    "invalid argument",
+    "invalid session id",
+    "move target out of bounds",
+    "no such alert",
+    "no such element",
+    "no such frame",
+    "no such handle",
+    "no such node",
+    "no such script",
+    "session not created",
+    "unable to capture screen",
+    "unable to close browser",
+    "unknown command",
+    "unknown error",
+    "unsupported operation",
   ])
 );
 export const SessionCommandSchema = z.lazy(() =>
@@ -313,11 +313,7 @@ export namespace BrowsingContext {
 }
 export namespace BrowsingContext {
   export const ReadinessStateSchema = z.lazy(() =>
-    z.union([
-      z.literal("none"),
-      z.literal("interactive"),
-      z.literal("complete"),
-    ])
+    z.enum(["none", "interactive", "complete"])
   );
 }
 export namespace BrowsingContext {
@@ -395,9 +391,7 @@ export namespace BrowsingContext {
   );
 }
 export namespace BrowsingContext {
-  export const CreateTypeSchema = z.lazy(() =>
-    z.union([z.literal("tab"), z.literal("window")])
-  );
+  export const CreateTypeSchema = z.lazy(() => z.enum(["tab", "window"]));
 }
 export namespace BrowsingContext {
   export const CreateParametersSchema = z.lazy(() =>
@@ -494,7 +488,7 @@ export namespace BrowsingContext {
       background: z.boolean().default(false).optional(),
       margin: BrowsingContext.PrintMarginParametersSchema.optional(),
       orientation: z
-        .union([z.literal("portrait"), z.literal("landscape")])
+        .enum(["portrait", "landscape"])
         .default("portrait")
         .optional(),
       page: BrowsingContext.PrintPageParametersSchema.optional(),
@@ -1081,12 +1075,7 @@ export namespace Script {
 }
 export namespace Script {
   export const SpecialNumberSchema = z.lazy(() =>
-    z.union([
-      z.literal("NaN"),
-      z.literal("-0"),
-      z.literal("Infinity"),
-      z.literal("-Infinity"),
-    ])
+    z.enum(["NaN", "-0", "Infinity", "-Infinity"])
   );
 }
 export namespace Script {
@@ -1211,15 +1200,15 @@ export namespace Script {
 }
 export namespace Script {
   export const RealmTypeSchema = z.lazy(() =>
-    z.union([
-      z.literal("window"),
-      z.literal("dedicated-worker"),
-      z.literal("shared-worker"),
-      z.literal("service-worker"),
-      z.literal("worker"),
-      z.literal("paint-worklet"),
-      z.literal("audio-worklet"),
-      z.literal("worklet"),
+    z.enum([
+      "window",
+      "dedicated-worker",
+      "shared-worker",
+      "service-worker",
+      "worker",
+      "paint-worklet",
+      "audio-worklet",
+      "worklet",
     ])
   );
 }
@@ -1517,9 +1506,7 @@ export namespace Script {
   );
 }
 export namespace Script {
-  export const ResultOwnershipSchema = z.lazy(() =>
-    z.union([z.literal("root"), z.literal("none")])
-  );
+  export const ResultOwnershipSchema = z.lazy(() => z.enum(["root", "none"]));
 }
 export namespace Script {
   export const SerializationOptionsSchema = z.lazy(() =>
@@ -1530,7 +1517,7 @@ export namespace Script {
         .default(null)
         .optional(),
       includeShadowTree: z
-        .union([z.literal("none"), z.literal("open"), z.literal("all")])
+        .enum(["none", "open", "all"])
         .default("none")
         .optional(),
     })
@@ -1754,12 +1741,7 @@ export namespace Script {
 export const LogEventSchema = z.lazy(() => Log.EntryAddedSchema);
 export namespace Log {
   export const LevelSchema = z.lazy(() =>
-    z.union([
-      z.literal("debug"),
-      z.literal("info"),
-      z.literal("warn"),
-      z.literal("error"),
-    ])
+    z.enum(["debug", "info", "warn", "error"])
   );
 }
 export namespace Log {
@@ -1898,7 +1880,7 @@ export namespace Input {
 }
 export namespace Input {
   export const PointerTypeSchema = z.lazy(() =>
-    z.union([z.literal("mouse"), z.literal("pen"), z.literal("touch")])
+    z.enum(["mouse", "pen", "touch"])
   );
 }
 export namespace Input {
