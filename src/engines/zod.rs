@@ -472,9 +472,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             &tr.generic_params,
         )?;
         print!(" = z.lazy(() => ");
-        if !self.visit_maybe_enum_type(&tr.value) {
-            self.visit_type(&tr.value)?;
-        }
+        self.visit_type(&tr.value)?;
         println!(");");
         for _ in &namespaces {
             println!("}}");
@@ -482,6 +480,9 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         Ok(())
     }
     fn visit_type(&mut self, t: &'b cddl::ast::Type<'a>) -> cddl::visitor::Result<Error> {
+        if self.visit_maybe_enum_type(&t) {
+            return Ok(());
+        }
         if t.type_choices.len() != 1 {
             print!("z.union([");
         }
@@ -765,11 +766,6 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             }
             cddl::ast::Type2::Array { group, .. } => {
                 self.visit_array(&group)?;
-            }
-            cddl::ast::Type2::ParenthesizedType { pt, .. } => {
-                if !self.visit_maybe_enum_type(pt) {
-                    cddl::visitor::walk_type2(self, t2)?;
-                }
             }
             cddl::ast::Type2::Any { .. } => print!("z.unknown()"),
             // The default has the correct behavior for the rest of the cases.
