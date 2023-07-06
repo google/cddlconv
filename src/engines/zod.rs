@@ -18,6 +18,7 @@ use crate::util::{split_namespaced, to_namespaced};
 
 const MAX_ARRAYS: usize = 1 << 3;
 
+#[repr(packed)]
 struct GroupChoiceContext {
     in_object: bool,
     is_first: bool,
@@ -25,8 +26,15 @@ struct GroupChoiceContext {
     in_and: bool,
 }
 
+#[derive(Copy, Clone)]
+enum ValueMode {
+    Literal,
+    Generic,
+    JavaScript,
+}
+
 struct Type1Context {
-    use_generic: bool,
+    value_mode: ValueMode,
 }
 
 struct PostambleOptions {
@@ -395,12 +403,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         ident: &cddl::ast::Identifier<'a>,
     ) -> cddl::visitor::Result<Error> {
-        if !self
-            .nested_type1
-            .last()
-            .map(|context| context.use_generic)
-            .unwrap_or(true)
-        {
+        if matches!(
+            self.nested_type1
+                .last()
+                .map(|context| context.value_mode)
+                .unwrap_or(ValueMode::Generic),
+            ValueMode::JavaScript
+        ) {
             match ident.ident {
                 "null" => {
                     print!("null");
@@ -685,10 +694,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         Ok(())
     }
     fn visit_type1(&mut self, t1: &'b cddl::ast::Type1<'a>) -> cddl::visitor::Result<Error> {
-        self.nested_type1.push(Type1Context { use_generic: true });
-        self.visit_type2(&t1.type2)?;
-        unsafe { self.nested_type1.last_mut().unwrap_unchecked().use_generic = false };
+        self.nested_type1.push(Type1Context {
+            value_mode: ValueMode::Generic,
+        });
         if let Some(op) = &t1.operator {
+            self.visit_type2(&t1.type2)?;
+
+            self.nested_type1.last_mut().unwrap().value_mode = ValueMode::JavaScript;
             match op.operator {
                 cddl::ast::RangeCtlOp::RangeOp { is_inclusive, .. } => {
                     if is_inclusive {
@@ -752,6 +764,9 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                     _ => unimplemented!(),
                 },
             }
+        } else {
+            self.nested_type1.last_mut().unwrap().value_mode = ValueMode::Literal;
+            self.visit_type2(&t1.type2)?;
         }
         self.nested_type1.pop();
         Ok(())
@@ -778,22 +793,28 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     }
 
     fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
-        if self.nested_type1.last().unwrap().use_generic {
-            match value {
+        match self.nested_type1.last().unwrap().value_mode {
+            ValueMode::Literal => match value {
                 cddl::token::Value::INT(value) => print!("z.literal({})", value),
                 cddl::token::Value::UINT(value) => print!("z.literal({})", value),
                 cddl::token::Value::FLOAT(value) => print!("z.literal({})", value),
                 cddl::token::Value::TEXT(value) => print!("z.literal(\"{}\")", value),
                 cddl::token::Value::BYTE(value) => print!("z.literal(\"{}\")", value),
-            }
-        } else {
-            match value {
+            },
+            ValueMode::Generic => match value {
+                cddl::token::Value::INT(_) => print!("z.number().int()"),
+                cddl::token::Value::UINT(_) => print!("z.number().int().nonnegative()"),
+                cddl::token::Value::FLOAT(_) => print!("z.number()"),
+                cddl::token::Value::TEXT(_) => print!("z.string()"),
+                cddl::token::Value::BYTE(_) => print!("z.string()"),
+            },
+            ValueMode::JavaScript => match value {
                 cddl::token::Value::INT(value) => print!("{}", value),
                 cddl::token::Value::UINT(value) => print!("{}", value),
                 cddl::token::Value::FLOAT(value) => print!("{}", value),
                 cddl::token::Value::TEXT(value) => print!("\"{}\"", value),
                 cddl::token::Value::BYTE(value) => print!("\"{}\"", value),
-            }
+            },
         }
         Ok(())
     }
