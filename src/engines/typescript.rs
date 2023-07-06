@@ -784,7 +784,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             cddl::ast::Type2::Array { group, .. } => {
                 self.visit_array(&group)?;
             }
-            cddl::ast::Type2::Any { .. } => print!("any"),
+            cddl::ast::Type2::Any { .. } => print!("unknown"),
             // The default has the correct behavior for the rest of the cases.
             t2 => {
                 cddl::visitor::walk_type2(self, t2)?;
