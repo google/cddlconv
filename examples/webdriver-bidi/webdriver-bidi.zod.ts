@@ -2,6 +2,7 @@
 // @ts-nocheck Some types may be circular.
 
 import z from "zod";
+
 export const CommandSchema = z.lazy(() =>
   z
     .object({
