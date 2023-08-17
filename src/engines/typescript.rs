@@ -111,6 +111,7 @@ impl<'a, 'b: 'a, 'c> Engine {
     }
     fn enter_comment(&mut self) {
         if !self.in_comment {
+            println!();
             print!("/*");
             self.in_comment = true;
         } else {
@@ -693,20 +694,25 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         gc: &'b cddl::ast::GroupChoice<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.nested_group_choices.push(GroupChoiceContext {
-            in_object: false,
-            is_first: true,
-        });
-        if gc.group_entries.is_empty() {
-            self.enter_map();
+        match gc.group_entries.is_empty() {
+            true => {
+                println!("Record<string, never>");
+                Ok(())
+            }
+            false => {
+                self.nested_group_choices.push(GroupChoiceContext {
+                    in_object: false,
+                    is_first: true,
+                });
+                for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
+                    self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
+                    self.visit_group_entry(entry)?;
+                }
+                self.exit_map();
+                self.nested_group_choices.pop();
+                Ok(())
+            }
         }
-        for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
-            self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
-            self.visit_group_entry(entry)?;
-        }
-        self.exit_map();
-        self.nested_group_choices.pop();
-        Ok(())
     }
     fn visit_memberkey(
         &mut self,
