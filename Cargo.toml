@@ -11,6 +11,6 @@ vector_groups = []
 
 [dependencies]
 anyhow = "1.0.71"
-cddl = "0.9.2"
+cddl = { git = "https://github.com/jrandolf/cddl.git", branch = "jrandolf/typename-discrim" }
 clap = { version = "4.3.10", features = ["derive"] }
 convert_case = "0.6.0"
