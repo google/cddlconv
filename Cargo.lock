@@ -29,7 +29,7 @@ checksum = "939d59666dd9a7964a3a5312b9d24c9c107630752ee64f2dd5038189a23fe331"
 dependencies = [
  "abnf",
  "indexmap",
- "itertools",
+ "itertools 0.10.5",
  "pretty",
 ]
 
@@ -183,7 +183,7 @@ checksum = "50d30906286121d95be3d479533b458f87493b30a4b5f79a607db8f5d11aa91f"
 [[package]]
 name = "cddl"
 version = "0.9.1"
-source = "git+https://github.com/jrandolf/cddl.git?branch=jrandolf/typename-discrim#ce2a439e278763f8212a8d728b16d9a2c2aff77d"
+source = "git+https://github.com/orkon/cddl.git?branch=orkon/old-branch#c2f866435c8d1380198ce7115e1d605f179720f2"
 dependencies = [
  "abnf_to_pest",
  "base16",
@@ -197,7 +197,7 @@ dependencies = [
  "data-encoding",
  "displaydoc",
  "hexf-parse",
- "itertools",
+ "itertools 0.11.0",
  "lexical-core",
  "log",
  "pest_meta",
@@ -593,6 +593,15 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
 dependencies = [
  "either",
 ]
