@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod engines;
-mod util;
-
 use anyhow::Result;
 use cddl::visitor::Visitor;
 use clap::{Parser, ValueEnum};
@@ -45,13 +42,13 @@ fn main() -> Result<()> {
 
     match args.format {
         EngineType::TypeScript => {
-            let mut engine = engines::typescript::Engine::new();
+            let mut engine = cddlconv::engines::typescript::Engine::new();
             engine.visit_cddl(&cddl)?;
             engine.print_postamble();
         }
         EngineType::Zod => {
-            let mut engine = engines::zod::Engine::new();
-            engines::zod::Engine::print_preamble();
+            let mut engine = cddlconv::engines::zod::Engine::new();
+            cddlconv::engines::zod::Engine::print_preamble();
             engine.visit_cddl(&cddl)?;
             engine.print_postamble();
         }
