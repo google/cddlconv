@@ -35,11 +35,11 @@ export type OptionalPerson = ([
 export type PersonWithEquipment = ([
 ...((Person)[]),...((EquipmentType)[])]);
 export type PersonWithAttrNames = ([
-...((Person)[])]);
+...(((Person))[])]);
 export type PersonWithAttrNames1 = ([
-...((Person)[]),...((EquipmentType)[])]);
+...(((Person))[]),...((EquipmentType)[])]);
 export type PersonWithAttrNames2 = ([
-...((Person)[]),...((EquipmentType)[])]);
+...(((Person))[]),...((EquipmentType)[])]);
 export type PersonWithAttrNames3 = ([
-...((Person)[]),...([]|[(EquipmentType),])]);
+...(((Person))[]),...([]|[(EquipmentType),])]);
 

@@ -651,26 +651,12 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                writeln!(
-                    self.stderr,
-                    "Expected key for value of type {} since this is a map. \
+                panic!(
+                    "Expected member key for type {} since the current ambient rule is a map. \
                     Did you mean to declare {} with parenthesis (`( .. )`) \
                     instead of brackets (`{{ .. }}`)?",
                     entry.entry_type, entry.entry_type
                 )
-                .unwrap();
-                // TODO: This is a temporary fix for situations where a typename
-                // should be used instead of a groupname.
-                self.exit_map();
-                self.print_group_joiner();
-                if is_group_entry_occurence_optional(&entry.occur) {
-                    write!(self.stdout, "Partial<").unwrap();
-                    self.visit_type(&entry.entry_type)?;
-                    write!(self.stdout, ">").unwrap();
-                } else {
-                    self.visit_type(&entry.entry_type)?;
-                }
-                return Ok(());
             }
         };
         self.print_group_joiner();
