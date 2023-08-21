@@ -1,0 +1,14 @@
+---
+source: tests/typescript.rs
+assertion_line: 48
+expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export type ExtensibleMapExample = (({
+  ["optional-key"]?:(number),  [key: string]:(any)}));
+export type ExtensibleMapExample2 = (({
+  ["optional-key"]?:(number),  [key: string]:(any)}));
+export type ExtensibleMapExample3 = (({
+  "optional-key"?:(number),  [key: string]:(any)}));
+export type ExtensibleMapExample4 = (({
+  ["optional-key"]?:(number),  [key: string]:(any)}));
+

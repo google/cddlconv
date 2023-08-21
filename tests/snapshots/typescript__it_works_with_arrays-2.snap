@@ -1,0 +1,45 @@
+---
+source: tests/typescript.rs
+assertion_line: 33
+expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export type EquipmentType = ([
+(string),(string)]);
+export type EquipmentType2 = ([
+
+/**
+ * @defaultValue `"hello"`
+ */
+(string),(string)]);
+export type EquipmentType3 = ([
+...([]|[(string),]),(string)]);
+export type EquipmentTolerances = ([
+...(([
+(number),(number)])[])]);
+export type Person = ({
+  "name":(string),  "age":(number)});
+export type UnlimitedPeople = ([
+...((Person)[])]);
+export type OneOrTwoPeople = ([
+...(|[(Person),]|[(Person),(Person),])]);
+export type AtMostTwoPeople = ([
+...([]|[(Person),]|[(Person),(Person),])]);
+export type AtLeastTwoPeople = ([
+...((Person)[])]);
+export type OnePerson = ([
+(Person)]);
+export type TwoPerson = ([
+(Person),(Person)]);
+export type OptionalPerson = ([
+...([]|[(Person),])]);
+export type PersonWithEquipment = ([
+...((Person)[]),...((EquipmentType)[])]);
+export type PersonWithAttrNames = ([
+...((Person)[])]);
+export type PersonWithAttrNames1 = ([
+...((Person)[]),...((EquipmentType)[])]);
+export type PersonWithAttrNames2 = ([
+...((Person)[]),...((EquipmentType)[])]);
+export type PersonWithAttrNames3 = ([
+...((Person)[]),...([]|[(EquipmentType),])]);
+

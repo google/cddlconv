@@ -1,0 +1,6 @@
+---
+source: tests/typescript.rs
+assertion_line: 47
+expression: "String::from_utf8(stderr.into_inner().unwrap()).unwrap()"
+---
+

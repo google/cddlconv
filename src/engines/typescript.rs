@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::io::Write;
+
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{is_alphaspace, split_namespaced, to_namespaced, to_pascalcase};
@@ -32,12 +34,18 @@ struct PostambleOptions {
     print_flatten: bool,
 }
 
-pub struct Engine {
+pub struct Engine<Stdout, Stderr>
+where
+    Stdout: Write,
+    Stderr: Write,
+{
     in_comment: bool,
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
     #[allow(dead_code)]
     postamble_options: PostambleOptions,
+    stdout: Stdout,
+    stderr: Stderr,
 }
 
 fn is_group_entry_occurence_optional(occur: &Option<cddl::ast::Occurrence<'_>>) -> bool {
@@ -67,8 +75,8 @@ fn calculate_array_entry_occurence(occur: &Option<cddl::ast::Occurrence<'_>>) ->
     }
 }
 
-impl<'a, 'b: 'a, 'c> Engine {
-    pub fn new() -> Engine {
+impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
+    pub fn with_writers(stdout: Stdout, stderr: Stderr) -> Engine<Stdout, Stderr> {
         Engine {
             in_comment: false,
             nested_group_choices: Vec::new(),
@@ -77,12 +85,18 @@ impl<'a, 'b: 'a, 'c> Engine {
                 #[cfg(feature = "vector_groups")]
                 print_flatten: false,
             },
+            stdout,
+            stderr,
         }
+    }
+    pub fn into_writers(self) -> (Stdout, Stderr) {
+        (self.stdout, self.stderr)
     }
     pub fn print_postamble(&mut self) {
         #[cfg(feature = "vector_groups")]
         if self.postamble_options.print_flatten {
-            print!(
+            write!(
+                self.stdout,
                 "export type Flatten<T extends unknown[]> = T extends (infer S)[][] \
                     ? S[] \
                     : never;"
@@ -93,7 +107,13 @@ impl<'a, 'b: 'a, 'c> Engine {
     fn visit_enum_type(&mut self, t: &'b cddl::ast::Type<'a>) -> cddl::visitor::Result<Error> {
         for choice in &t.type_choices {
             if let cddl::ast::Type2::TextValue { value, .. } = &choice.type1.type2 {
-                println!("{} = \"{}\",", to_pascalcase(value), value.to_string());
+                writeln!(
+                    self.stdout,
+                    "{} = \"{}\",",
+                    to_pascalcase(value),
+                    value.to_string()
+                )
+                .unwrap();
             } else {
                 panic!("Called `visit_enum_type` on non-textual type");
             }
@@ -111,18 +131,18 @@ impl<'a, 'b: 'a, 'c> Engine {
     }
     fn enter_comment(&mut self) {
         if !self.in_comment {
-            println!();
-            print!("/*");
+            writeln!(self.stdout).unwrap();
+            write!(self.stdout, "/*").unwrap();
             self.in_comment = true;
         } else {
-            print!(" ");
+            write!(self.stdout, " ").unwrap();
         }
-        println!("*");
+        writeln!(self.stdout, "*").unwrap();
     }
     fn exit_comment(&mut self) {
         if self.in_comment {
             self.in_comment = false;
-            println!(" */");
+            writeln!(self.stdout, " */").unwrap();
         }
     }
     fn visit_type_for_comment(
@@ -148,70 +168,70 @@ impl<'a, 'b: 'a, 'c> Engine {
             match op.operator {
                 cddl::ast::RangeCtlOp::RangeOp { is_inclusive, .. } => {
                     self.enter_comment();
-                    print!(" * Must be between `");
+                    write!(self.stdout, " * Must be between `").unwrap();
                     self.visit_type2(&t1.type2)?;
-                    print!("` and `");
+                    write!(self.stdout, "` and `").unwrap();
                     self.visit_type2(&op.type2)?;
-                    print!("`");
+                    write!(self.stdout, "`").unwrap();
                     if is_inclusive {
-                        print!(", inclusive");
+                        write!(self.stdout, ", inclusive").unwrap();
                     }
-                    println!(".");
+                    writeln!(self.stdout, ".").unwrap();
                 }
                 cddl::ast::RangeCtlOp::CtlOp { ctrl, .. } => match ctrl {
                     cddl::token::ControlOperator::DEFAULT => {
                         self.enter_comment();
-                        print!(" * @defaultValue `");
+                        write!(self.stdout, " * @defaultValue `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`");
+                        writeln!(self.stdout, "`").unwrap();
                     }
                     cddl::token::ControlOperator::SIZE => {
                         self.enter_comment();
-                        print!(" * Must be `");
+                        write!(self.stdout, " * Must be `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("` units in length.");
+                        writeln!(self.stdout, "` units in length.").unwrap();
                     }
                     cddl::token::ControlOperator::PCRE | cddl::token::ControlOperator::REGEXP => {
                         self.enter_comment();
-                        print!(" * Must match the pattern `");
+                        write!(self.stdout, " * Must match the pattern `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`.");
+                        writeln!(self.stdout, "`.").unwrap();
                     }
                     cddl::token::ControlOperator::LT => {
                         self.enter_comment();
-                        print!(" * Must be less than `");
+                        write!(self.stdout, " * Must be less than `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`.");
+                        writeln!(self.stdout, "`.").unwrap();
                     }
                     cddl::token::ControlOperator::LE => {
                         self.enter_comment();
-                        print!(" * Must be less than or equal to `");
+                        write!(self.stdout, " * Must be less than or equal to `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`.");
+                        writeln!(self.stdout, "`.").unwrap();
                     }
                     cddl::token::ControlOperator::GT => {
                         self.enter_comment();
-                        print!(" * Must be greater than `");
+                        write!(self.stdout, " * Must be greater than `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`.");
+                        writeln!(self.stdout, "`.").unwrap();
                     }
                     cddl::token::ControlOperator::GE => {
                         self.enter_comment();
-                        print!(" * Must be greater than or equal to `");
+                        write!(self.stdout, " * Must be greater than or equal to `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`.");
+                        writeln!(self.stdout, "`.").unwrap();
                     }
                     cddl::token::ControlOperator::EQ => {
                         self.enter_comment();
-                        print!(" * Must be equal to `");
+                        write!(self.stdout, " * Must be equal to `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`.");
+                        writeln!(self.stdout, "`.").unwrap();
                     }
                     cddl::token::ControlOperator::NE => {
                         self.enter_comment();
-                        print!(" * Must be not equal `");
+                        write!(self.stdout, " * Must be not equal `").unwrap();
                         self.visit_type2(&op.type2)?;
-                        println!("`.");
+                        writeln!(self.stdout, "`.").unwrap();
                     }
                     _ => {}
                 },
@@ -222,18 +242,18 @@ impl<'a, 'b: 'a, 'c> Engine {
     }
     fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
         match value {
-            cddl::token::Value::INT(value) => print!("{}", value),
-            cddl::token::Value::UINT(value) => print!("{}", value),
-            cddl::token::Value::FLOAT(value) => print!("{}", value),
-            cddl::token::Value::TEXT(value) => print!("\"{}\"", value),
-            cddl::token::Value::BYTE(value) => print!("\"{}\"", value),
+            cddl::token::Value::INT(value) => write!(self.stdout, "{}", value).unwrap(),
+            cddl::token::Value::UINT(value) => write!(self.stdout, "{}", value).unwrap(),
+            cddl::token::Value::FLOAT(value) => write!(self.stdout, "{}", value).unwrap(),
+            cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\"", value).unwrap(),
+            cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\"", value).unwrap(),
         }
         Ok(())
     }
     fn visit_array(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         for (index, choice) in g.group_choices.iter().enumerate() {
             if index != 0 {
-                print!("|");
+                write!(self.stdout, "|").unwrap();
             }
             self.visit_array_choice(choice)?;
         }
@@ -262,11 +282,11 @@ impl<'a, 'b: 'a, 'c> Engine {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 if !group.is_first {
-                    print!(",");
+                    write!(self.stdout, ",").unwrap();
                 }
             } else {
                 if !group.is_first {
-                    print!("&");
+                    write!(self.stdout, "&").unwrap();
                 }
             }
         }
@@ -274,7 +294,7 @@ impl<'a, 'b: 'a, 'c> Engine {
     fn enter_array(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_object {
-                println!("[");
+                writeln!(self.stdout, "[").unwrap();
                 group.in_object = true;
             }
         }
@@ -283,14 +303,14 @@ impl<'a, 'b: 'a, 'c> Engine {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
-                print!("]");
+                write!(self.stdout, "]").unwrap();
             }
         }
     }
     fn enter_map(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_object {
-                println!("{{");
+                writeln!(self.stdout, "{{").unwrap();
                 group.in_object = true;
             }
         }
@@ -299,7 +319,7 @@ impl<'a, 'b: 'a, 'c> Engine {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
-                print!("}}");
+                write!(self.stdout, "}}").unwrap();
             }
         }
     }
@@ -317,9 +337,9 @@ impl<'a, 'b: 'a, 'c> Engine {
             cddl::ast::GroupEntry::InlineGroup { group, .. } => {
                 self.print_group_joiner();
                 self.enter_array();
-                print!("...(");
+                write!(self.stdout, "...(").unwrap();
                 self.visit_array(&group)?;
-                print!(")");
+                write!(self.stdout, ")").unwrap();
             }
         }
         Ok(())
@@ -329,7 +349,12 @@ impl<'a, 'b: 'a, 'c> Engine {
         entry: &'b cddl::ast::ValueMemberKeyEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
         if let Some(mk) = &entry.member_key {
-            eprintln!("Keys are not supported for arrays. Ignoring key: {}", mk);
+            writeln!(
+                self.stderr,
+                "Keys are not supported for arrays. Ignoring key: {}",
+                mk
+            )
+            .unwrap();
         }
         self.print_group_joiner();
         self.enter_array();
@@ -338,30 +363,30 @@ impl<'a, 'b: 'a, 'c> Engine {
             (lower, upper) if lower == upper => {
                 for index in 0..lower {
                     if index != 0 {
-                        print!(",");
+                        write!(self.stdout, ",").unwrap();
                     }
                     self.visit_type(&entry.entry_type)?
                 }
             }
             (lower, upper) => {
-                print!("...(");
+                write!(self.stdout, "...(").unwrap();
                 if upper < MAX_ARRAYS {
                     for bound in lower..upper + 1 {
                         if bound != 0 {
-                            print!("|");
+                            write!(self.stdout, "|").unwrap();
                         }
-                        print!("[");
+                        write!(self.stdout, "[").unwrap();
                         for _ in 0..bound {
                             self.visit_type(&entry.entry_type)?;
-                            print!(",");
+                            write!(self.stdout, ",").unwrap();
                         }
-                        print!("]");
+                        write!(self.stdout, "]").unwrap();
                     }
                 } else {
                     self.visit_type(&entry.entry_type)?;
-                    print!("[]");
+                    write!(self.stdout, "[]").unwrap();
                 }
-                print!(")");
+                write!(self.stdout, ")").unwrap();
             }
         }
         Ok(())
@@ -376,60 +401,60 @@ impl<'a, 'b: 'a, 'c> Engine {
             (lower, upper) if lower == upper => {
                 for index in 0..lower {
                     if index != 0 {
-                        print!(",");
+                        write!(self.stdout, ",").unwrap();
                     }
                     if cfg!(feature = "vector_groups") {
-                        print!("...");
+                        write!(self.stdout, "...").unwrap();
                         self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                        print!("Vector");
+                        write!(self.stdout, "Vector").unwrap();
                     } else {
-                        print!("(");
+                        write!(self.stdout, "(").unwrap();
                         self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                        print!(")");
+                        write!(self.stdout, ")").unwrap();
                     }
                 }
             }
             (lower, upper) => {
-                print!("...(");
+                write!(self.stdout, "...(").unwrap();
                 if upper < MAX_ARRAYS {
                     for bound in lower..upper + 1 {
                         if bound != 0 {
-                            print!("|");
+                            write!(self.stdout, "|").unwrap();
                         }
-                        print!("[");
+                        write!(self.stdout, "[").unwrap();
                         for _ in 0..bound {
                             if cfg!(feature = "vector_groups") {
-                                print!("...");
+                                write!(self.stdout, "...").unwrap();
                                 self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                                print!("Vector");
+                                write!(self.stdout, "Vector").unwrap();
                             } else {
-                                print!("(");
+                                write!(self.stdout, "(").unwrap();
                                 self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                                print!(")");
+                                write!(self.stdout, ")").unwrap();
                             }
-                            print!(",");
+                            write!(self.stdout, ",").unwrap();
                         }
-                        print!("]");
+                        write!(self.stdout, "]").unwrap();
                     }
                 } else {
                     #[cfg(feature = "vector_groups")]
                     {
                         self.postamble_options.print_flatten = true;
-                        print!("Flatten<");
+                        write!(self.stdout, "Flatten<").unwrap();
                         self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                        print!("Vector");
-                        print!("[]");
-                        print!(">");
+                        write!(self.stdout, "Vector").unwrap();
+                        write!(self.stdout, "[]").unwrap();
+                        write!(self.stdout, ">").unwrap();
                     }
                     #[cfg(not(feature = "vector_groups"))]
                     {
-                        print!("(");
+                        write!(self.stdout, "(").unwrap();
                         self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                        print!(")");
-                        print!("[]");
+                        write!(self.stdout, ")").unwrap();
+                        write!(self.stdout, "[]").unwrap();
                     }
                 }
-                print!(")");
+                write!(self.stdout, ")").unwrap();
             }
         }
         Ok(())
@@ -442,12 +467,12 @@ impl<'a, 'b: 'a, 'c> Engine {
     ) -> cddl::visitor::Result<Error> {
         self.visit_identifier(ident)?;
         if let Some(params) = params {
-            print!("<");
+            write!(self.stdout, "<").unwrap();
             for param in &params.params {
                 self.visit_identifier(&param.param)?;
-                print!(",")
+                write!(self.stdout, ",").unwrap()
             }
-            print!(">");
+            write!(self.stdout, ">").unwrap();
         }
         Ok(())
     }
@@ -459,48 +484,44 @@ impl<'a, 'b: 'a, 'c> Engine {
     ) -> cddl::visitor::Result<Error> {
         self.visit_identifier(ident)?;
         if let Some(params) = params {
-            print!("<");
+            write!(self.stdout, "<").unwrap();
             for param in &params.args {
                 self.visit_type1(&param.arg)?;
-                print!(",")
+                write!(self.stdout, ",").unwrap()
             }
-            print!(">");
+            write!(self.stdout, ">").unwrap();
         }
         Ok(())
     }
 }
 
-impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
+impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine<Stdout, Stderr> {
     fn visit_identifier(
         &mut self,
         ident: &cddl::ast::Identifier<'a>,
     ) -> cddl::visitor::Result<Error> {
         match ident.ident {
-            "bool" => print!("boolean"),
+            "bool" => write!(self.stdout, "boolean").unwrap(),
             "uint" | "nint" | "int" | "float16" | "float32" | "float64" | "float16-32"
-            | "float32-64" | "float" | "number" => {
-                print!("number")
-            }
-            "biguint" | "bignint" | "bigint" => {
-                print!("bigint")
-            }
-            "bstr" | "bytes" => print!("Uint8Array"),
-            "tstr" | "text" => print!("string"),
-            "any" => print!("any"),
-            "nil" | "null" => print!("null"),
-            "true" => print!("true"),
-            "uri" => print!("URL"),
-            "regexp" => print!("RegExp"),
-            "false" => print!("false"),
-            "undefined" => print!("undefined"),
-            ident => print!("{}", to_namespaced(ident)),
+            | "float32-64" | "float" | "number" => write!(self.stdout, "number").unwrap(),
+            "biguint" | "bignint" | "bigint" => write!(self.stdout, "bigint").unwrap(),
+            "bstr" | "bytes" => write!(self.stdout, "Uint8Array").unwrap(),
+            "tstr" | "text" => write!(self.stdout, "string").unwrap(),
+            "any" => write!(self.stdout, "any").unwrap(),
+            "nil" | "null" => write!(self.stdout, "null").unwrap(),
+            "true" => write!(self.stdout, "true").unwrap(),
+            "uri" => write!(self.stdout, "URL").unwrap(),
+            "regexp" => write!(self.stdout, "RegExp").unwrap(),
+            "false" => write!(self.stdout, "false").unwrap(),
+            "undefined" => write!(self.stdout, "undefined").unwrap(),
+            ident => write!(self.stdout, "{}", to_namespaced(ident)).unwrap(),
         }
         Ok(())
     }
     fn visit_type_rule(&mut self, tr: &'b cddl::ast::TypeRule<'a>) -> cddl::visitor::Result<Error> {
         let (namespaces, type_name) = split_namespaced(&tr.name);
         for namespace in &namespaces {
-            println!("export namespace {} {{", namespace);
+            writeln!(self.stdout, "export namespace {} {{", namespace).unwrap();
         }
         if tr.value.type_choices.iter().all(|choice| {
             if let cddl::ast::Type2::TextValue { value, .. } = &choice.type1.type2 {
@@ -509,12 +530,12 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 false
             }
         }) {
-            print!("export const enum {} {{", type_name);
+            write!(self.stdout, "export const enum {} {{", type_name).unwrap();
             self.visit_enum_type(&tr.value)?;
-            println!("}}");
+            writeln!(self.stdout, "}}").unwrap();
         } else {
             self.visit_type_for_comment(&tr.value)?;
-            print!("export type ");
+            write!(self.stdout, "export type ").unwrap();
             self.visit_identifier_with_params(
                 &cddl::ast::Identifier {
                     ident: &type_name,
@@ -523,24 +544,24 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 },
                 &tr.generic_params,
             )?;
-            print!(" = ");
+            write!(self.stdout, " = ").unwrap();
             self.visit_type(&tr.value)?;
-            println!(";");
+            writeln!(self.stdout, ";").unwrap();
         }
         for _ in &namespaces {
-            println!("}}");
+            writeln!(self.stdout, "}}").unwrap();
         }
         Ok(())
     }
     fn visit_type(&mut self, t: &'b cddl::ast::Type<'a>) -> cddl::visitor::Result<Error> {
-        print!("(");
+        write!(self.stdout, "(").unwrap();
         for i in 0..t.type_choices.len() {
             if i != 0 {
-                print!("| ");
+                write!(self.stdout, "| ").unwrap();
             }
             self.visit_type1(&t.type_choices[i].type1)?;
         }
-        print!(")");
+        write!(self.stdout, ")").unwrap();
         Ok(())
     }
     fn visit_group_rule(
@@ -549,7 +570,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     ) -> cddl::visitor::Result<Error> {
         let (namespaces, type_name) = split_namespaced(&gr.name);
         for namespace in &namespaces {
-            println!("export namespace {} {{", namespace);
+            writeln!(self.stdout, "export namespace {} {{", namespace).unwrap();
         }
 
         let choice = cddl::ast::GroupChoice {
@@ -571,7 +592,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         //
         // This requires us to build to types in case of usage: one for use as a
         // map and the other for use as an array.
-        print!("export type ");
+        write!(self.stdout, "export type ").unwrap();
         self.visit_identifier_with_params(
             &cddl::ast::Identifier {
                 ident: &type_name,
@@ -580,12 +601,12 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             },
             &gr.generic_params,
         )?;
-        print!(" = ");
+        write!(self.stdout, " = ").unwrap();
         self.visit_group_choice(&choice)?;
-        println!(";");
+        writeln!(self.stdout, ";").unwrap();
 
         if cfg!(feature = "vector_groups") {
-            println!("export type ");
+            writeln!(self.stdout, "export type ").unwrap();
             self.visit_identifier_with_params(
                 &cddl::ast::Identifier {
                     ident: &type_name,
@@ -594,13 +615,13 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 },
                 &gr.generic_params,
             )?;
-            print!("Vector = ");
+            write!(self.stdout, "Vector = ").unwrap();
             self.visit_array_choice(&choice)?;
-            println!(";");
+            writeln!(self.stdout, ";").unwrap();
         }
 
         for _ in &namespaces {
-            println!("}}");
+            writeln!(self.stdout, "}}").unwrap();
         }
         Ok(())
     }
@@ -630,20 +651,22 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         let mk = match &entry.member_key {
             Some(mk) => mk,
             None => {
-                eprintln!(
+                writeln!(
+                    self.stderr,
                     "Expected key for value of type {} since this is a map. \
                     Did you mean to declare {} with parenthesis (`( .. )`) \
                     instead of brackets (`{{ .. }}`)?",
                     entry.entry_type, entry.entry_type
-                );
+                )
+                .unwrap();
                 // TODO: This is a temporary fix for situations where a typename
                 // should be used instead of a groupname.
                 self.exit_map();
                 self.print_group_joiner();
                 if is_group_entry_occurence_optional(&entry.occur) {
-                    print!("Partial<");
+                    write!(self.stdout, "Partial<").unwrap();
                     self.visit_type(&entry.entry_type)?;
-                    print!(">");
+                    write!(self.stdout, ">").unwrap();
                 } else {
                     self.visit_type(&entry.entry_type)?;
                 }
@@ -652,15 +675,15 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         };
         self.print_group_joiner();
         self.enter_map();
-        print!("  ");
+        write!(self.stdout, "  ").unwrap();
         self.visit_type_for_comment(&entry.entry_type)?;
         self.visit_memberkey(&mk)?;
         if is_group_entry_occurence_optional(&entry.occur)
             && !matches!(&mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. })
         {
-            print!("?");
+            write!(self.stdout, "?").unwrap();
         }
-        print!(":");
+        write!(self.stdout, ":").unwrap();
         self.visit_type(&entry.entry_type)?;
         Ok(())
     }
@@ -671,23 +694,23 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         self.exit_map();
         self.print_group_joiner();
         if is_group_entry_occurence_optional(&entry.occur) {
-            print!("Partial<");
+            write!(self.stdout, "Partial<").unwrap();
             self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-            print!(">");
+            write!(self.stdout, ">").unwrap();
         } else {
             self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
         }
         Ok(())
     }
     fn visit_group(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
-        print!("(");
+        write!(self.stdout, "(").unwrap();
         for i in 0..g.group_choices.len() {
             if i != 0 {
-                print!("| ");
+                write!(self.stdout, "| ").unwrap();
             }
             self.visit_group_choice(&g.group_choices[i])?;
         }
-        print!(")");
+        write!(self.stdout, ")").unwrap();
         Ok(())
     }
     fn visit_group_choice(
@@ -696,7 +719,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     ) -> cddl::visitor::Result<Error> {
         match gc.group_entries.is_empty() {
             true => {
-                println!("Record<string, never>");
+                writeln!(self.stdout, "Record<string, never>").unwrap();
                 Ok(())
             }
             false => {
@@ -720,22 +743,22 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     ) -> cddl::visitor::Result<Error> {
         match mk {
             cddl::ast::MemberKey::Type1 { t1, is_cut, .. } => {
-                print!("[");
+                write!(self.stdout, "[").unwrap();
                 if !is_cut {
-                    print!("key: ");
+                    write!(self.stdout, "key: ").unwrap();
                     self.visit_type1(t1)?;
                 } else {
                     self.visit_type1(t1)?;
                 }
-                print!("]");
+                write!(self.stdout, "]").unwrap();
             }
             cddl::ast::MemberKey::Bareword { ident, .. } => {
-                print!("\"{}\"", &ident);
+                write!(self.stdout, "\"{}\"", &ident).unwrap();
             }
             cddl::ast::MemberKey::Value { value, .. } => {
-                print!("[");
+                write!(self.stdout, "[").unwrap();
                 self.visit_value(value)?;
-                print!("]");
+                write!(self.stdout, "]").unwrap();
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
                 unimplemented!()
@@ -762,14 +785,14 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         {
             match ctrl {
                 cddl::token::ControlOperator::WITHIN => {
-                    println!(" extends ");
+                    writeln!(self.stdout, " extends ").unwrap();
                     self.visit_type2(&type2)?;
-                    println!(" ? ");
+                    writeln!(self.stdout, " ? ").unwrap();
                     self.visit_type2(&t1.type2)?;
-                    println!(" : never");
+                    writeln!(self.stdout, " : never").unwrap();
                 }
                 cddl::token::ControlOperator::AND => {
-                    println!(" & ");
+                    writeln!(self.stdout, " & ").unwrap();
                     self.visit_type2(&type2)?;
                 }
                 _ => {}
@@ -790,7 +813,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             cddl::ast::Type2::Array { group, .. } => {
                 self.visit_array(&group)?;
             }
-            cddl::ast::Type2::Any { .. } => print!("unknown"),
+            cddl::ast::Type2::Any { .. } => write!(self.stdout, "unknown").unwrap(),
             // The default has the correct behavior for the rest of the cases.
             t2 => {
                 cddl::visitor::walk_type2(self, t2)?;
@@ -804,16 +827,18 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             match value {
                 cddl::token::Value::INT(_)
                 | cddl::token::Value::UINT(_)
-                | cddl::token::Value::FLOAT(_) => print!("number"),
-                cddl::token::Value::TEXT(_) | cddl::token::Value::BYTE(_) => print!("string"),
+                | cddl::token::Value::FLOAT(_) => write!(self.stdout, "number").unwrap(),
+                cddl::token::Value::TEXT(_) | cddl::token::Value::BYTE(_) => {
+                    write!(self.stdout, "string").unwrap()
+                }
             }
         } else {
             match value {
-                cddl::token::Value::INT(value) => print!("{}", value),
-                cddl::token::Value::UINT(value) => print!("{}", value),
-                cddl::token::Value::FLOAT(value) => print!("{}", value),
-                cddl::token::Value::TEXT(value) => print!("\"{}\"", value),
-                cddl::token::Value::BYTE(value) => print!("\"{}\"", value),
+                cddl::token::Value::INT(value) => write!(self.stdout, "{}", value).unwrap(),
+                cddl::token::Value::UINT(value) => write!(self.stdout, "{}", value).unwrap(),
+                cddl::token::Value::FLOAT(value) => write!(self.stdout, "{}", value).unwrap(),
+                cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\"", value).unwrap(),
+                cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\"", value).unwrap(),
             }
         }
         Ok(())

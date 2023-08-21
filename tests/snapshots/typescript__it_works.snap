@@ -1,0 +1,9 @@
+---
+source: tests/typescript.rs
+assertion_line: 17
+expression: "String::from_utf8(stderr.into_inner().unwrap()).unwrap()"
+---
+Expected key for value of type script.ChannelValue since this is a map. Did you mean to declare script.ChannelValue with parenthesis (`( .. )`) instead of brackets (`{ .. }`)?
+Expected key for value of type script.RealmTarget since this is a map. Did you mean to declare script.RealmTarget with parenthesis (`( .. )`) instead of brackets (`{ .. }`)?
+Expected key for value of type script.ContextTarget since this is a map. Did you mean to declare script.ContextTarget with parenthesis (`( .. )`) instead of brackets (`{ .. }`)?
+

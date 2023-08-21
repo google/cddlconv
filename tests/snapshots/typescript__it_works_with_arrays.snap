@@ -1,0 +1,13 @@
+---
+source: tests/typescript.rs
+assertion_line: 32
+expression: "String::from_utf8(stderr.into_inner().unwrap()).unwrap()"
+---
+Keys are not supported for arrays. Ignoring key: name:
+Keys are not supported for arrays. Ignoring key: manufacturer:
+Keys are not supported for arrays. Ignoring key: named:
+Keys are not supported for arrays. Ignoring key: named:
+Keys are not supported for arrays. Ignoring key: equip:
+Keys are not supported for arrays. Ignoring key: named:
+Keys are not supported for arrays. Ignoring key: named:
+
