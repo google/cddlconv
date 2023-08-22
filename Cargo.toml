@@ -11,7 +11,7 @@ vector_groups = []
 
 [dependencies]
 anyhow = "1.0.71"
-cddl = { git = "https://github.com/jrandolf/cddl.git", branch = "jrandolf/sub-parse" }
+cddl = { git = "https://github.com/anweiss/cddl.git" }
 clap = { version = "4.3.10", features = ["derive"] }
 convert_case = "0.6.0"
 
