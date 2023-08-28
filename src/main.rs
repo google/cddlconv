@@ -42,7 +42,10 @@ fn main() -> Result<()> {
 
     match args.format {
         EngineType::TypeScript => {
-            let mut engine = cddlconv::engines::typescript::Engine::with_writers(std::io::stdout(), std::io::stderr());
+            let mut engine = cddlconv::engines::typescript::Engine::with_writers(
+                std::io::stdout(),
+                std::io::stderr(),
+            );
             engine.visit_cddl(&cddl)?;
             engine.print_postamble();
         }

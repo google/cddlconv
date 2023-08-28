@@ -25,4 +25,7 @@ macro_rules! test {
 test!(it_works, "examples/webdriver-bidi/webdriver-bidi.cddl");
 test!(it_works_with_arrays, "examples/rfc-examples/arrays.cddl");
 test!(it_works_with_maps, "examples/rfc-examples/maps.cddl");
-test!(it_works_with_amendments, "examples/rfc-examples/colors.cddl");
+test!(
+    it_works_with_amendments,
+    "examples/rfc-examples/colors.cddl"
+);
