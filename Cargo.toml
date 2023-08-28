@@ -2,6 +2,11 @@
 name = "cddlconv"
 version = "0.1.1"
 edition = "2021"
+authors = ["Google Inc"]
+description = "A commandline utility for converting CDDL to various formats."
+repository = "https://github.com/google/cddlconv/"
+license = "Apache-2.0"
+keywords = ["cddl", "converter", "parser"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
