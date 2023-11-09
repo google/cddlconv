@@ -1,6 +1,5 @@
 ---
-source: tests/typescript.rs
-assertion_line: 26
+source: tests/zod.rs
 expression: "String::from_utf8(stderr.into_inner().unwrap()).unwrap()"
 ---
 

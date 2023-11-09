@@ -50,8 +50,9 @@ fn main() -> Result<()> {
             engine.print_postamble();
         }
         EngineType::Zod => {
-            let mut engine = cddlconv::engines::zod::Engine::new();
-            cddlconv::engines::zod::Engine::print_preamble();
+            let mut engine =
+                cddlconv::engines::zod::Engine::with_writers(std::io::stdout(), std::io::stderr());
+            engine.print_preamble();
             engine.visit_cddl(&cddl)?;
             engine.print_postamble();
         }
