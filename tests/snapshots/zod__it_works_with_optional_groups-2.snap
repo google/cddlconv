@@ -1,0 +1,17 @@
+---
+source: tests/zod.rs
+expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export const ASchema = z.lazy(() => z.object({
+"foo":z.string()}).and(
+z.object({
+"bar":z.string()}).or(z.object({})))
+);
+export const BSchema = z.lazy(() => z.object({
+"foo":z.string()}).and(
+BarSchema.or(z.object({})))
+);
+export const 
+BarSchema = z.lazy(() => z.object({
+"bar":z.string()}));
+

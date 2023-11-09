@@ -11,7 +11,7 @@ macro_rules! test {
             let cddl = cddl::parser::cddl_from_str(&input, true).unwrap();
             let stdout = BufWriter::new(Vec::new());
             let stderr = BufWriter::new(Vec::new());
-            let mut engine = cddlconv::engines::typescript::Engine::with_writers(stdout, stderr);
+            let mut engine = cddlconv::engines::zod::Engine::with_writers(stdout, stderr);
             engine.visit_cddl(&cddl).unwrap();
             engine.print_postamble();
 
@@ -23,7 +23,6 @@ macro_rules! test {
 }
 
 test!(it_works, "examples/webdriver-bidi/webdriver-bidi.cddl");
-test!(it_works_with_arrays, "examples/rfc-examples/arrays.cddl");
 test!(it_works_with_maps, "examples/rfc-examples/maps.cddl");
 test!(
     it_works_with_amendments,

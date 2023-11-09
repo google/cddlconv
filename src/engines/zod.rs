@@ -1,3 +1,5 @@
+#![allow(unused_must_use)]
+
 // Copyright 2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +13,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+use std::io::Write;
 
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
@@ -42,27 +46,21 @@ struct PostambleOptions {
     print_flatten: bool,
 }
 
-pub struct Engine {
+pub struct Engine<Stdout, Stderr>
+where
+    Stdout: Write,
+    Stderr: Write,
+{
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
     #[allow(dead_code)]
     postamble_options: PostambleOptions,
+    stdout: Stdout,
+    #[allow(dead_code)]
+    stderr: Stderr,
 }
 
-fn is_group_entry_occurence_optional(occur: &Option<cddl::ast::Occurrence<'_>>) -> bool {
-    match &occur {
-        Some(Occurrence { occur, .. }) => match occur {
-            cddl::ast::Occur::Exact {
-                lower: Some(lower), ..
-            } if *lower == 0 => true,
-            cddl::ast::Occur::ZeroOrMore { .. } | cddl::ast::Occur::Optional { .. } => true,
-            _ => false,
-        },
-        None => false,
-    }
-}
-
-fn calculate_array_entry_occurence(occur: &Option<cddl::ast::Occurrence<'_>>) -> (usize, usize) {
+fn calculate_occurrence(occur: &Option<cddl::ast::Occurrence<'_>>) -> (usize, usize) {
     match &occur {
         Some(Occurrence { occur, .. }) => match occur {
             cddl::ast::Occur::ZeroOrMore { .. } => (0, usize::MAX),
@@ -76,8 +74,8 @@ fn calculate_array_entry_occurence(occur: &Option<cddl::ast::Occurrence<'_>>) ->
     }
 }
 
-impl<'a, 'b: 'a, 'c> Engine {
-    pub fn new() -> Engine {
+impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
+    pub fn with_writers(stdout: Stdout, stderr: Stderr) -> Engine<Stdout, Stderr> {
         Engine {
             nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
@@ -85,14 +83,22 @@ impl<'a, 'b: 'a, 'c> Engine {
                 #[cfg(feature = "vector_groups")]
                 print_flatten: false,
             },
+            stdout,
+            stderr,
         }
     }
-    pub fn print_preamble() {
-        println!("// eslint-disable-next-line @typescript-eslint/ban-ts-comment");
-        println!("// @ts-nocheck Some types may be circular.");
-        println!();
-        println!("import z from 'zod';");
-        println!();
+    pub fn into_writers(self) -> (Stdout, Stderr) {
+        (self.stdout, self.stderr)
+    }
+    pub fn print_preamble(&mut self) {
+        writeln!(
+            self.stdout,
+            "// eslint-disable-next-line @typescript-eslint/ban-ts-comment"
+        );
+        writeln!(self.stdout, "// @ts-nocheck Some types may be circular.");
+        writeln!(self.stdout);
+        writeln!(self.stdout, "import z from 'zod';");
+        writeln!(self.stdout);
     }
     pub fn print_postamble(&mut self) {
         #[cfg(feature = "vector_groups")]
@@ -108,13 +114,13 @@ impl<'a, 'b: 'a, 'c> Engine {
                 .map(|choice| &choice.type1.type2)
                 .all(|type2| matches!(type2, cddl::ast::Type2::TextValue { .. }))
         {
-            print!("z.enum([");
+            write!(self.stdout, "z.enum([");
             for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
                 if let cddl::ast::Type2::TextValue { value, .. } = type2 {
-                    print!("\"{}\",", value);
+                    write!(self.stdout, "\"{}\",", value);
                 }
             }
-            print!("])");
+            write!(self.stdout, "])");
             true
         } else {
             false
@@ -122,16 +128,16 @@ impl<'a, 'b: 'a, 'c> Engine {
     }
     fn visit_array(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         if g.group_choices.len() != 1 {
-            print!("z.union([");
+            write!(self.stdout, "z.union([");
         }
         for (index, choice) in g.group_choices.iter().enumerate() {
             if index != 0 {
-                print!(",");
+                write!(self.stdout, ",");
             }
             self.visit_array_choice(choice)?;
         }
         if g.group_choices.len() != 1 {
-            print!("])");
+            write!(self.stdout, "])");
         }
         Ok(())
     }
@@ -156,27 +162,17 @@ impl<'a, 'b: 'a, 'c> Engine {
         self.nested_group_choices.pop();
         Ok(())
     }
-    fn print_group_joiner(&mut self) {
-        if let Some(group) = self.nested_group_choices.last_mut() {
-            if group.in_object {
-                if !group.is_first {
-                    print!(",");
-                }
-            } else {
-                if group.in_and {
-                    group.in_and = false;
-                    println!(")");
-                }
-                if !group.is_first {
-                    self.enter_and();
-                }
-            }
+    fn in_tuple(&self) -> bool {
+        if let Some(group) = self.nested_group_choices.last() {
+            group.in_object
+        } else {
+            false
         }
     }
     fn enter_tuple(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_object {
-                println!("z.tuple([");
+                writeln!(self.stdout, "z.tuple([");
                 group.in_object = true;
             }
         }
@@ -185,15 +181,31 @@ impl<'a, 'b: 'a, 'c> Engine {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
-                print!("])");
+                write!(self.stdout, "])");
             }
         }
-        self.exit_and();
+    }
+    fn print_group_joiner(&mut self) {
+        if let Some(group) = self.nested_group_choices.last_mut() {
+            if group.in_object {
+                if !group.is_first {
+                    write!(self.stdout, ",");
+                }
+            } else {
+                if group.in_and {
+                    group.in_and = false;
+                    writeln!(self.stdout, ")");
+                }
+                if !group.is_first {
+                    self.enter_and();
+                }
+            }
+        }
     }
     fn enter_and(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_and {
-                println!(".and(");
+                writeln!(self.stdout, ".and(");
                 group.in_and = true;
             }
         }
@@ -202,14 +214,14 @@ impl<'a, 'b: 'a, 'c> Engine {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_and {
                 group.in_and = false;
-                println!(")");
+                writeln!(self.stdout, ")");
             }
         }
     }
     fn enter_map(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_object {
-                println!("z.object({{");
+                writeln!(self.stdout, "z.object({{");
                 group.in_object = true;
             }
         }
@@ -218,7 +230,7 @@ impl<'a, 'b: 'a, 'c> Engine {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
-                print!("}})");
+                write!(self.stdout, "}})");
             }
         }
         self.exit_and();
@@ -226,7 +238,7 @@ impl<'a, 'b: 'a, 'c> Engine {
     fn enter_record(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_record {
-                println!("z.record(");
+                writeln!(self.stdout, "z.record(");
                 group.in_record = true;
             }
         }
@@ -235,10 +247,11 @@ impl<'a, 'b: 'a, 'c> Engine {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_record {
                 group.in_record = false;
-                print!(")");
+                write!(self.stdout, ")");
             }
         }
     }
+
     fn visit_array_entry(
         &mut self,
         entry: &'b cddl::ast::GroupEntry<'a>,
@@ -248,157 +261,110 @@ impl<'a, 'b: 'a, 'c> Engine {
                 self.visit_value_array_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
+                if self.in_tuple() {
+                    return Err(Error::CDDL(
+                        "Zod cannot mix array members and array groups. Use one or the other"
+                            .to_string(),
+                    ));
+                }
+                let (lower, upper) = calculate_occurrence(&ge.occur);
+                if lower != upper || lower != 1 {
+                    return Err(Error::CDDL(
+                        "Multiplicity for array types is not supported.".to_string(),
+                    ));
+                }
                 self.visit_type_arrayname_entry(ge)?;
             }
-            cddl::ast::GroupEntry::InlineGroup { group, .. } => {
-                self.exit_tuple();
-                self.print_group_joiner();
+            cddl::ast::GroupEntry::InlineGroup { occur, group, .. } => {
+                if self.in_tuple() {
+                    return Err(Error::CDDL(
+                        "Zod cannot mix array members and array groups. Use one or the other"
+                            .to_string(),
+                    ));
+                }
+                let (lower, upper) = calculate_occurrence(&occur);
+                if lower != upper || lower != 1 {
+                    return Err(Error::CDDL(
+                        "Multiplicity for array types is not supported.".to_string(),
+                    ));
+                }
                 self.visit_array(&group)?;
             }
         }
         Ok(())
     }
+
     fn visit_value_array_member_key_entry(
         &mut self,
         entry: &'b cddl::ast::ValueMemberKeyEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        if let Some(mk) = &entry.member_key {
-            eprintln!("Keys are not supported for arrays. Ignoring key: {}", mk);
-        }
-        match calculate_array_entry_occurence(&entry.occur) {
-            (lower, upper) if lower == upper => {
-                self.print_group_joiner();
-                self.enter_tuple();
-                for index in 0..lower {
-                    if index != 0 {
-                        print!(",");
-                    }
-                    self.visit_type(&entry.entry_type)?
+        let (lower, upper) = calculate_occurrence(&entry.occur);
+        if lower == upper {
+            self.print_group_joiner();
+            self.enter_tuple();
+            for index in 0..lower {
+                if index != 0 {
+                    write!(self.stdout, ",");
                 }
+                self.visit_type(&entry.entry_type)?
             }
-            (lower, upper) => {
-                self.exit_tuple();
-                self.print_group_joiner();
-                if upper < MAX_ARRAYS {
-                    print!("z.union([");
-                    for bound in lower..upper + 1 {
-                        if bound != 0 {
-                            print!(",");
-                        }
-                        print!("z.tuple([");
-                        for index in 0..bound {
-                            if index != 0 {
-                                print!(",");
-                            }
-                            self.visit_type(&entry.entry_type)?;
-                        }
-                        print!("])");
+        } else {
+            if self.in_tuple() {
+                return Err(Error::CDDL(
+                    "Zod cannot mix array members (e.g. `int`) with varying occurrence array members (e.g. `* text`). Use one or the other."
+                        .to_string(),
+                ));
+            }
+            if upper < MAX_ARRAYS {
+                write!(self.stdout, "z.union([");
+                for bound in lower..upper + 1 {
+                    if bound != 0 {
+                        write!(self.stdout, ",");
                     }
-                    print!("])");
-                } else {
-                    print!("z.array(");
-                    self.visit_type(&entry.entry_type)?;
-                    print!(")");
+                    write!(self.stdout, "z.tuple([");
+                    for index in 0..bound {
+                        if index != 0 {
+                            write!(self.stdout, ",");
+                        }
+                        self.visit_type(&entry.entry_type)?;
+                    }
+                    write!(self.stdout, "])");
                 }
+                write!(self.stdout, "])");
+            } else {
+                write!(self.stdout, "z.array(");
+                self.visit_type(&entry.entry_type)?;
+                write!(self.stdout, ")");
             }
         }
         Ok(())
     }
+
     fn visit_type_arrayname_entry(
         &mut self,
         entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        match calculate_array_entry_occurence(&entry.occur) {
-            (lower, upper) if lower == upper => {
-                self.print_group_joiner();
-                self.enter_tuple();
-                for index in 0..lower {
-                    if index != 0 {
-                        print!(",");
-                    }
-                    if cfg!(feature = "vector_groups") {
-                        unimplemented!();
-                    } else {
-                        self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                    }
-                }
-            }
-            (lower, upper) => {
-                self.exit_tuple();
-                self.print_group_joiner();
-                if upper < MAX_ARRAYS {
-                    print!("z.union([");
-                    for bound in lower..upper + 1 {
-                        if bound != 0 {
-                            print!(",");
-                        }
-                        print!("z.tuple([");
-                        for index in 0..bound {
-                            if index != 0 {
-                                print!(",");
-                            }
-                            if cfg!(feature = "vector_groups") {
-                                unimplemented!();
-                            } else {
-                                self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                            }
-                        }
-                        print!("])");
-                    }
-                    print!("])");
-                } else {
-                    #[cfg(feature = "vector_groups")]
-                    {
-                        unimplemented!();
-                    }
-                    #[cfg(not(feature = "vector_groups"))]
-                    {
-                        print!("z.array(");
-                        self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-                        print!(")");
-                    }
-                }
-            }
-        }
-        Ok(())
+        self.visit_identifier_with_args(&entry.name, &entry.generic_args)
     }
 
     fn visit_identifier_with_params(
         &mut self,
         ident: &cddl::ast::Identifier<'a>,
-        params: &Option<cddl::ast::GenericParams<'a>>,
+        _params: &Option<cddl::ast::GenericParams<'a>>,
     ) -> cddl::visitor::Result<Error> {
-        self.visit_identifier(ident)?;
-        if let Some(params) = params {
-            print!("<");
-            for param in &params.params {
-                self.visit_identifier(&param.param)?;
-                print!(",")
-            }
-            print!(">");
-        }
-        Ok(())
+        self.visit_identifier(ident)
     }
 
     fn visit_identifier_with_args(
         &mut self,
         ident: &cddl::ast::Identifier<'a>,
-        params: &Option<cddl::ast::GenericArgs<'a>>,
+        _params: &Option<cddl::ast::GenericArgs<'a>>,
     ) -> cddl::visitor::Result<Error> {
-        self.visit_identifier(ident)?;
-        if let Some(params) = params {
-            print!("<");
-            for param in &params.args {
-                self.visit_type1(&param.arg)?;
-                print!(",")
-            }
-            print!(">");
-        }
-        Ok(())
+        self.visit_identifier(ident)
     }
 }
 
-impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
+impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine<Stdout, Stderr> {
     fn visit_identifier(
         &mut self,
         ident: &cddl::ast::Identifier<'a>,
@@ -412,67 +378,67 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         ) {
             match ident.ident {
                 "null" => {
-                    print!("null");
+                    write!(self.stdout, "null");
                     return Ok(());
                 }
                 "true" => {
-                    print!("true");
+                    write!(self.stdout, "true");
                     return Ok(());
                 }
                 "false" => {
-                    print!("false");
+                    write!(self.stdout, "false");
                     return Ok(());
                 }
                 "undefined" => {
-                    print!("undefined");
+                    write!(self.stdout, "undefined");
                     return Ok(());
                 }
                 _ => {}
             }
         }
         match ident.ident {
-            "bool" => print!("z.boolean()"),
+            "bool" => write!(self.stdout, "z.boolean()"),
             "uint" => {
-                print!("z.number().int().nonnegative()")
+                write!(self.stdout, "z.number().int().nonnegative()")
             }
             "nint" => {
-                print!("z.number().int().negative()")
+                write!(self.stdout, "z.number().int().negative()")
             }
             "int" => {
-                print!("z.number().int()")
+                write!(self.stdout, "z.number().int()")
             }
             "float16" | "float32" | "float64" | "float16-32" | "float32-64" | "float"
             | "number" => {
-                print!("z.number()")
+                write!(self.stdout, "z.number()")
             }
             "biguint" => {
-                print!("z.bigint().nonnegative()")
+                write!(self.stdout, "z.bigint().nonnegative()")
             }
             "bignint" => {
-                print!("z.bigint().negative()")
+                write!(self.stdout, "z.bigint().negative()")
             }
             "bigint" => {
-                print!("z.bigint()")
+                write!(self.stdout, "z.bigint()")
             }
-            "bstr" | "bytes" => print!("z.string()"),
-            "tstr" | "text" => print!("z.string()"),
-            "any" => print!("z.any()"),
-            "nil" | "null" => print!("z.null()"),
-            "true" => print!("z.literal(true)"),
-            "false" => print!("z.literal(false)"),
-            "undefined" => print!("z.undefined()"),
-            "uri" => print!("z.string().url()"),
-            "regexp" => print!("z.string()"),
-            ident => print!("{}Schema", to_namespaced(ident)),
-        }
+            "bstr" | "bytes" => write!(self.stdout, "z.string()"),
+            "tstr" | "text" => write!(self.stdout, "z.string()"),
+            "any" => write!(self.stdout, "z.any()"),
+            "nil" | "null" => write!(self.stdout, "z.null()"),
+            "true" => write!(self.stdout, "z.literal(true)"),
+            "false" => write!(self.stdout, "z.literal(false)"),
+            "undefined" => write!(self.stdout, "z.undefined()"),
+            "uri" => write!(self.stdout, "z.string().url()"),
+            "regexp" => write!(self.stdout, "z.string()"),
+            ident => write!(self.stdout, "{}Schema", to_namespaced(ident)),
+        };
         Ok(())
     }
     fn visit_type_rule(&mut self, tr: &'b cddl::ast::TypeRule<'a>) -> cddl::visitor::Result<Error> {
         let (namespaces, type_name) = split_namespaced(&tr.name);
         for namespace in &namespaces {
-            println!("export namespace {} {{", namespace);
+            writeln!(self.stdout, "export namespace {} {{", namespace);
         }
-        print!("export const ");
+        write!(self.stdout, "export const ");
         self.visit_identifier_with_params(
             &cddl::ast::Identifier {
                 ident: &type_name,
@@ -481,11 +447,11 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             },
             &tr.generic_params,
         )?;
-        print!(" = z.lazy(() => ");
+        write!(self.stdout, " = z.lazy(() => ");
         self.visit_type(&tr.value)?;
-        println!(");");
+        writeln!(self.stdout, ");");
         for _ in &namespaces {
-            println!("}}");
+            writeln!(self.stdout, "}}");
         }
         Ok(())
     }
@@ -494,16 +460,16 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             return Ok(());
         }
         if t.type_choices.len() != 1 {
-            print!("z.union([");
+            write!(self.stdout, "z.union([");
         }
         for i in 0..t.type_choices.len() {
             if i != 0 {
-                print!(",");
+                write!(self.stdout, ",");
             }
             self.visit_type1(&t.type_choices[i].type1)?;
         }
         if t.type_choices.len() != 1 {
-            print!("])");
+            write!(self.stdout, "])");
         }
         Ok(())
     }
@@ -513,7 +479,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     ) -> cddl::visitor::Result<Error> {
         let (namespaces, type_name) = split_namespaced(&gr.name);
         for namespace in &namespaces {
-            println!("export namespace {} {{", namespace);
+            writeln!(self.stdout, "export namespace {} {{", namespace);
         }
 
         let choice = cddl::ast::GroupChoice {
@@ -535,7 +501,7 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         //
         // This requires us to build to types in case of usage: one for use as a
         // map and the other for use as an array.
-        println!("export const ");
+        writeln!(self.stdout, "export const ");
         self.visit_identifier_with_params(
             &cddl::ast::Identifier {
                 ident: &type_name,
@@ -544,16 +510,16 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             },
             &gr.generic_params,
         )?;
-        print!(" = z.lazy(() => ");
+        write!(self.stdout, " = z.lazy(() => ");
         self.visit_group_choice(&choice)?;
-        println!(");");
+        writeln!(self.stdout, ");");
 
         if cfg!(feature = "vector_groups") {
             unimplemented!();
         }
 
         for _ in &namespaces {
-            println!("}}");
+            writeln!(self.stdout, "}}");
         }
         Ok(())
     }
@@ -566,12 +532,24 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 self.visit_value_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
-                self.visit_type_groupname_entry(ge)?;
-            }
-            cddl::ast::GroupEntry::InlineGroup { group, .. } => {
                 self.exit_map();
                 self.print_group_joiner();
-                self.visit_group(group)?;
+                if matches!(calculate_occurrence(&ge.occur), (0, max) if max > 0) {
+                    self.visit_type_groupname_entry(ge)?;
+                    write!(self.stdout, ".or(z.object({{}}))");
+                } else {
+                    self.visit_type_groupname_entry(ge)?;
+                }
+            }
+            cddl::ast::GroupEntry::InlineGroup { occur, group, .. } => {
+                self.exit_map();
+                self.print_group_joiner();
+                if matches!(calculate_occurrence(&occur), (0, max) if max > 0) {
+                    self.visit_group(group)?;
+                    write!(self.stdout, ".or(z.object({{}}))");
+                } else {
+                    self.visit_group(group)?;
+                }
             }
         }
         Ok(())
@@ -580,35 +558,18 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         entry: &'b cddl::ast::ValueMemberKeyEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        let mk = match &entry.member_key {
-            Some(mk) => mk,
-            None => {
-                eprintln!(
-                    "Expected key for value of type {} since this is a map. \
-                    Did you mean to declare {} with parenthesis (`( .. )`) \
-                    instead of brackets (`{{ .. }}`)?",
-                    entry.entry_type, entry.entry_type
-                );
-                // TODO: This is a temporary fix for situations where a typename
-                // should be used instead of a groupname.
-                self.exit_map();
-                self.print_group_joiner();
-                if is_group_entry_occurence_optional(&entry.occur) {
-                    self.visit_type(&entry.entry_type)?;
-                    print!(".partial()");
-                } else {
-                    self.visit_type(&entry.entry_type)?;
-                }
-                return Ok(());
-            }
-        };
-        print!("  ");
+        let mk = entry.member_key.as_ref().expect(&format!(
+            "Expected member key for type {} since the current ambient rule is a map. \
+            Did you mean to declare {} with parenthesis (`( .. )`) \
+            instead of brackets (`{{ .. }}`)?",
+            entry.entry_type, entry.entry_type
+        ));
         self.visit_memberkey(&mk)?;
         self.visit_type(&entry.entry_type)?;
-        if is_group_entry_occurence_optional(&entry.occur)
+        if matches!(calculate_occurrence(&entry.occur), (0, max) if max > 0)
             && !matches!(&mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. })
         {
-            print!(".optional()");
+            write!(self.stdout, ".optional()");
         }
         self.exit_record();
         Ok(())
@@ -617,28 +578,21 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
         &mut self,
         entry: &'b cddl::ast::TypeGroupnameEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
-        self.exit_map();
-        self.print_group_joiner();
-        if is_group_entry_occurence_optional(&entry.occur) {
-            self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-            print!(".partial()");
-        } else {
-            self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
-        }
+        self.visit_identifier_with_args(&entry.name, &entry.generic_args)?;
         Ok(())
     }
     fn visit_group(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         if g.group_choices.len() != 1 {
-            print!("z.union([");
+            write!(self.stdout, "z.union([");
         }
         for i in 0..g.group_choices.len() {
             if i != 0 {
-                print!(",");
+                write!(self.stdout, ",");
             }
             self.visit_group_choice(&g.group_choices[i])?;
         }
         if g.group_choices.len() != 1 {
-            print!("])");
+            write!(self.stdout, "])");
         }
         Ok(())
     }
@@ -673,19 +627,19 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
                 self.print_group_joiner();
                 self.enter_record();
                 self.visit_type1(t1)?;
-                print!(",");
+                write!(self.stdout, ",");
             }
             cddl::ast::MemberKey::Bareword { ident, .. } => {
                 self.print_group_joiner();
                 self.enter_map();
-                print!("\"{}\":", &ident);
+                write!(self.stdout, "\"{}\":", &ident);
             }
             cddl::ast::MemberKey::Value { value, .. } => {
                 self.print_group_joiner();
                 self.enter_map();
-                print!("[");
+                write!(self.stdout, "[");
                 self.visit_value(value)?;
-                print!("]:");
+                write!(self.stdout, "]:");
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
                 unimplemented!()
@@ -704,62 +658,62 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             match op.operator {
                 cddl::ast::RangeCtlOp::RangeOp { is_inclusive, .. } => {
                     if is_inclusive {
-                        print!(".gte(");
+                        write!(self.stdout, ".gte(");
                         self.visit_type2(&t1.type2)?;
-                        print!(").lte(");
+                        write!(self.stdout, ").lte(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     } else {
-                        print!(".gt(");
+                        write!(self.stdout, ".gt(");
                         self.visit_type2(&t1.type2)?;
-                        print!(").lt(");
+                        write!(self.stdout, ").lt(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                 }
                 cddl::ast::RangeCtlOp::CtlOp { ctrl, .. } => match ctrl {
                     cddl::token::ControlOperator::DEFAULT => {
-                        print!(".default(");
+                        write!(self.stdout, ".default(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                     cddl::token::ControlOperator::SIZE => {
-                        print!(".length(");
+                        write!(self.stdout, ".length(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                     cddl::token::ControlOperator::PCRE | cddl::token::ControlOperator::REGEXP => {
-                        print!(".regex(new RegExp(");
+                        write!(self.stdout, ".regex(new RegExp(");
                         self.visit_type2(&op.type2)?;
-                        print!("))");
+                        write!(self.stdout, "))");
                     }
                     cddl::token::ControlOperator::LT => {
-                        print!(".lt(");
+                        write!(self.stdout, ".lt(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                     cddl::token::ControlOperator::LE => {
-                        print!(".lte(");
+                        write!(self.stdout, ".lte(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                     cddl::token::ControlOperator::GT => {
-                        print!(".gt(");
+                        write!(self.stdout, ".gt(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                     cddl::token::ControlOperator::GE => {
-                        print!(".gte(");
+                        write!(self.stdout, ".gte(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                     cddl::token::ControlOperator::EQ | cddl::token::ControlOperator::NE => {
                         unimplemented!();
                     }
                     cddl::token::ControlOperator::WITHIN | cddl::token::ControlOperator::AND => {
-                        print!(".and(");
+                        write!(self.stdout, ".and(");
                         self.visit_type2(&op.type2)?;
-                        print!(")");
+                        write!(self.stdout, ")");
                     }
                     _ => unimplemented!(),
                 },
@@ -783,7 +737,9 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
             cddl::ast::Type2::Array { group, .. } => {
                 self.visit_array(&group)?;
             }
-            cddl::ast::Type2::Any { .. } => print!("z.unknown()"),
+            cddl::ast::Type2::Any { .. } => {
+                write!(self.stdout, "z.unknown()");
+            }
             // The default has the correct behavior for the rest of the cases.
             t2 => {
                 cddl::visitor::walk_type2(self, t2)?;
@@ -795,27 +751,29 @@ impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for Engine {
     fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
         match self.nested_type1.last().unwrap().value_mode {
             ValueMode::Literal => match value {
-                cddl::token::Value::INT(value) => print!("z.literal({})", value),
-                cddl::token::Value::UINT(value) => print!("z.literal({})", value),
-                cddl::token::Value::FLOAT(value) => print!("z.literal({})", value),
-                cddl::token::Value::TEXT(value) => print!("z.literal(\"{}\")", value),
-                cddl::token::Value::BYTE(value) => print!("z.literal(\"{}\")", value),
+                cddl::token::Value::INT(value) => write!(self.stdout, "z.literal({})", value),
+                cddl::token::Value::UINT(value) => write!(self.stdout, "z.literal({})", value),
+                cddl::token::Value::FLOAT(value) => write!(self.stdout, "z.literal({})", value),
+                cddl::token::Value::TEXT(value) => write!(self.stdout, "z.literal(\"{}\")", value),
+                cddl::token::Value::BYTE(value) => write!(self.stdout, "z.literal(\"{}\")", value),
             },
             ValueMode::Generic => match value {
-                cddl::token::Value::INT(_) => print!("z.number().int()"),
-                cddl::token::Value::UINT(_) => print!("z.number().int().nonnegative()"),
-                cddl::token::Value::FLOAT(_) => print!("z.number()"),
-                cddl::token::Value::TEXT(_) => print!("z.string()"),
-                cddl::token::Value::BYTE(_) => print!("z.string()"),
+                cddl::token::Value::INT(_) => write!(self.stdout, "z.number().int()"),
+                cddl::token::Value::UINT(_) => {
+                    write!(self.stdout, "z.number().int().nonnegative()")
+                }
+                cddl::token::Value::FLOAT(_) => write!(self.stdout, "z.number()"),
+                cddl::token::Value::TEXT(_) => write!(self.stdout, "z.string()"),
+                cddl::token::Value::BYTE(_) => write!(self.stdout, "z.string()"),
             },
             ValueMode::JavaScript => match value {
-                cddl::token::Value::INT(value) => print!("{}", value),
-                cddl::token::Value::UINT(value) => print!("{}", value),
-                cddl::token::Value::FLOAT(value) => print!("{}", value),
-                cddl::token::Value::TEXT(value) => print!("\"{}\"", value),
-                cddl::token::Value::BYTE(value) => print!("\"{}\"", value),
+                cddl::token::Value::INT(value) => write!(self.stdout, "{}", value),
+                cddl::token::Value::UINT(value) => write!(self.stdout, "{}", value),
+                cddl::token::Value::FLOAT(value) => write!(self.stdout, "{}", value),
+                cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\"", value),
+                cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\"", value),
             },
-        }
+        };
         Ok(())
     }
 }

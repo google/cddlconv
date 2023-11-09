@@ -76,6 +76,7 @@ ErrorCode = "invalid argument" /
             "no such element" /
             "no such frame" /
             "no such handle" /
+            "no such history entry" /
             "no such intercept" /
             "no such node" /
             "no such request" /
@@ -110,18 +111,70 @@ session.CapabilityRequest = {
   ? browserName: text,
   ? browserVersion: text,
   ? platformName: text,
-  ? proxy: {
-    ? proxyType: "pac" / "direct" / "autodetect" / "system" / "manual",
-    ? proxyAutoconfigUrl: text,
-    ? ftpProxy: text,
-    ? httpProxy: text,
-    ? noProxy: [*text],
-    ? sslProxy: text,
-    ? socksProxy: text,
-    ? socksVersion: 0..255,
-  },
+  ? proxy: session.ProxyConfiguration,
+  ? webSocketUrl: bool,
   Extensible
 };
+
+session.ProxyConfiguration = {
+   session.AutodetectProxyConfiguration //
+   session.DirectProxyConfiguration //
+   session.ManualProxyConfiguration //
+   session.PacProxyConfiguration //
+   session.SystemProxyConfiguration //
+}
+
+session.AutodetectProxyConfiguration = (
+   ; Indicates that the proxy to use should be detected in an
+   ; implementation-specific way.
+   proxyType: "autodetect"
+   Extensible
+)
+
+session.DirectProxyConfiguration = (
+   ; Indicates that the browser should not use a proxy at all.
+   proxyType: "direct"
+   Extensible
+)
+
+session.ManualProxyConfiguration = (
+   ; Indicates a manual proxy configuration.
+   proxyType: "manual",
+   ; Defines the proxy host for FTP traffic.
+   ? ftpProxy: text,
+   ; Defines the proxy host for HTTP traffic.
+   ? httpProxy: text,
+   ; Defines the proxy host for encrypted TLS traffic.
+   ? sslProxy: text,
+   ; Defines the proxy host for a SOCKS proxy.
+   ? session.SocksProxyConfiguration
+   ; Lists the address for which the proxy should be bypassed.
+   ? noProxy: [*text],
+   Extensible
+)
+
+session.SocksProxyConfiguration = (
+   ; Defines the proxy host for a SOCKS proxy.
+   socksProxy: text,
+   ; Defines the SOCKS proxy version.
+   socksVersion: 0..255,
+)
+
+session.PacProxyConfiguration = (
+   ; Indicates that the proxy to use is defined by the proxyAutoconfigUrl.
+   proxyType: "pac",
+   ; Defines the URL for a proxy auto-config file
+   proxyAutoconfigUrl: text,
+   Extensible
+)
+
+session.SystemProxyConfiguration = (
+   ; Indicates that the browser should use the various proxies configured
+   ; for the underlying Operating System.
+   proxyType: "system"
+   Extensible
+)
+
 
 session.SubscriptionRequest = {
   events: [*text],
@@ -150,21 +203,22 @@ session.NewParameters = {
 session.NewResult = {
   sessionId: text,
   capabilities: {
+    ; Initially set to false, indicates the session will not implicitly
+    ; trust untrusted or self-signed TLS certificates on navigation.
     acceptInsecureCerts: bool,
+    ; ASCII Lowercase name of the user agent as a string.
     browserName: text,
+    ; The user agent version, as a string.
     browserVersion: text,
+    ; ASCII Lowercase name of the current platform as a string.
     platformName: text,
-    proxy: {
-      ? proxyType: "pac" / "direct" / "autodetect" / "system" / "manual",
-      ? proxyAutoconfigUrl: text,
-      ? ftpProxy: text,
-      ? httpProxy: text,
-      ? noProxy: [*text],
-      ? sslProxy: text,
-      ? socksProxy: text,
-      ? socksVersion: 0..255,
-    },
+    ; Indicates whether the remote end supports all of the resizing and
+    ; positioning commands.
     setWindowRect: bool,
+    ; Defined when the request defines a "proxy".
+    ? proxy: session.ProxyConfiguration,
+    ; Defined when the request defined a "webSocketUrl"
+    ? webSocketUrl: bool,
     Extensible
   }
 }
@@ -202,30 +256,34 @@ BrowsingContextCommand = (
   browsingContext.Create //
   browsingContext.GetTree //
   browsingContext.HandleUserPrompt //
+  browsingContext.LocateNodes //
   browsingContext.Navigate //
   browsingContext.Print //
   browsingContext.Reload //
-  browsingContext.SetViewport
+  browsingContext.SetViewport //
+  browsingContext.TraverseHistory
 )
 
 BrowsingContextResult = (
   browsingContext.CaptureScreenshotResult /
   browsingContext.CreateResult /
   browsingContext.GetTreeResult /
+  browsingContext.LocateNodesResult /
   browsingContext.NavigateResult /
-  browsingContext.PrintResult
+  browsingContext.PrintResult /
+  browsingContext.TraverseHistoryResult
 )
 
 BrowsingContextEvent = (
   browsingContext.ContextCreated //
   browsingContext.ContextDestroyed //
-  browsingContext.NavigationStarted //
-  browsingContext.FragmentNavigated //
   browsingContext.DomContentLoaded //
-  browsingContext.Load //
   browsingContext.DownloadWillBegin //
+  browsingContext.FragmentNavigated //
+  browsingContext.Load //
   browsingContext.NavigationAborted //
   browsingContext.NavigationFailed //
+  browsingContext.NavigationStarted //
   browsingContext.UserPromptClosed //
   browsingContext.UserPromptOpened
 )
@@ -239,6 +297,30 @@ browsingContext.Info = {
   url: text,
   children: browsingContext.InfoList / null
   ? parent: browsingContext.BrowsingContext / null,
+}
+
+browsingContext.Locator = (
+   browsingContext.CssLocator /
+   browsingContext.InnerTextLocator /
+   browsingContext.XPathLocator
+)
+
+browsingContext.CssLocator = {
+   type: "css",
+   value: text
+}
+
+browsingContext.InnerTextLocator = {
+   type: "innerText",
+   value: text,
+   ? ignoreCase: bool
+   ? matchType: "full" / "partial",
+   ? maxDepth: js-uint,
+}
+
+browsingContext.XPathLocator = {
+   type: "xpath",
+   value: text
 }
 
 browsingContext.Navigation = text;
@@ -268,7 +350,14 @@ browsingContext.CaptureScreenshot = (
 
 browsingContext.CaptureScreenshotParameters = {
   context: browsingContext.BrowsingContext,
-  ? clip: browsingContext.ClipRectangle
+  ? origin: ("viewport" / "document") .default "viewport",
+  ? format: browsingContext.ImageFormat,
+  ? clip: browsingContext.ClipRectangle,
+}
+
+browsingContext.ImageFormat = {
+   type: text,
+   ? quality: 0.0..1.0,
 }
 
 browsingContext.ClipRectangle = (
@@ -278,12 +367,11 @@ browsingContext.ClipRectangle = (
 
 browsingContext.ElementClipRectangle = {
   type: "element",
-  element: script.SharedReference,
-  ? scrollIntoView: bool
+  element: script.SharedReference
 }
 
 browsingContext.BoxClipRectangle = {
-   type: "viewport",
+   type: "box",
    x: float,
    y: float,
    width: float,
@@ -300,7 +388,8 @@ browsingContext.Close = (
 )
 
 browsingContext.CloseParameters = {
-  context: browsingContext.BrowsingContext
+  context: browsingContext.BrowsingContext,
+  ? promptUnload: bool .default false
 }
 
 browsingContext.Create = (
@@ -345,6 +434,25 @@ browsingContext.HandleUserPromptParameters = {
   ? userText: text,
 }
 
+browsingContext.LocateNodes = (
+  method: "browsingContext.locateNodes",
+  params: browsingContext.LocateNodesParameters
+)
+
+browsingContext.LocateNodesParameters = {
+   context: browsingContext.BrowsingContext,
+   locator: browsingContext.Locator,
+   ? maxNodeCount: (js-uint .ge 1),
+   ? ownership: script.ResultOwnership,
+   ? sandbox: text,
+   ? serializationOptions: script.SerializationOptions,
+   ? startNodes: [ + script.SharedReference ]
+}
+
+browsingContext.LocateNodesResult = {
+    nodes: [ * script.NodeRemoteValue ]
+}
+
 browsingContext.Navigate = (
   method: "browsingContext.navigate",
   params: browsingContext.NavigateParameters
@@ -384,9 +492,11 @@ browsingContext.PrintMarginParameters = {
   ? top: (float .ge 0.0) .default 1.0,
 }
 
+; Minimum size is 1pt x 1pt. Conversion follows from
+; https://www.w3.org/TR/css3-values/#absolute-lengths
 browsingContext.PrintPageParameters = {
-  ? height: (float .ge 0.0) .default 27.94,
-  ? width: (float .ge 0.0) .default 21.59,
+  ? height: (float .ge 0.0352) .default 27.94,
+  ? width: (float .ge 0.0352) .default 21.59,
 }
 
 browsingContext.PrintResult = {
@@ -411,12 +521,26 @@ browsingContext.SetViewport = (
 
 browsingContext.SetViewportParameters = {
   context: browsingContext.BrowsingContext,
-  viewport: browsingContext.Viewport / null,
+  ? viewport: browsingContext.Viewport / null,
+  ? devicePixelRatio: (float .gt 0.0) / null,
 }
 
 browsingContext.Viewport = {
   width: js-uint,
   height: js-uint,
+}
+
+browsingContext.TraverseHistory = (
+  method: "browsingContext.traverseHistory",
+  params: browsingContext.TraverseHistoryParameters
+)
+
+browsingContext.TraverseHistoryParameters = {
+  context: browsingContext.BrowsingContext,
+  delta: js-int,
+}
+
+browsingContext.TraverseHistoryResult = {
 }
 
 browsingContext.ContextCreated = (
@@ -483,7 +607,8 @@ browsingContext.UserPromptOpened = (
 browsingContext.UserPromptOpenedParameters = {
   context: browsingContext.BrowsingContext,
   type: "alert" / "confirm" / "prompt" / "beforeunload",
-  message: text
+  message: text,
+  ? defaultValue: text
 }
 
 
@@ -807,12 +932,12 @@ network.ResponseStartedParameters = {
 }
 
 ScriptCommand = (
-  script.AddPreloadScriptCommand //
+  script.AddPreloadScript //
   script.CallFunction //
   script.Disown //
   script.Evaluate //
   script.GetRealms //
-  script.RemovePreloadScriptCommand
+  script.RemovePreloadScript
 )
 
 ScriptResult = (
@@ -866,6 +991,8 @@ script.ExceptionDetails = {
 };
 
 script.Handle = text;
+
+script.InternalId = text;
 
 script.LocalValue = (
   script.RemoteReference /
@@ -1068,8 +1195,6 @@ script.RemoteValue = (
   script.WindowProxyRemoteValue
 )
 
-script.InternalId = js-uint;
-
 script.ListRemoteValue = [*script.RemoteValue];
 
 script.MappingRemoteValue = [*[(script.RemoteValue / text), script.RemoteValue]];
@@ -1263,7 +1388,7 @@ script.Target = (
   script.ContextTarget
 );
 
-script.AddPreloadScriptCommand = (
+script.AddPreloadScript = (
   method: "script.addPreloadScript",
   params: script.AddPreloadScriptParameters
 )
@@ -1271,6 +1396,7 @@ script.AddPreloadScriptCommand = (
 script.AddPreloadScriptParameters = {
   functionDeclaration: text,
   ? arguments: [*script.ChannelValue],
+  ? contexts: [+browsingContext.BrowsingContext],
   ? sandbox: text
 }
 
@@ -1332,7 +1458,7 @@ script.GetRealmsResult = {
   realms: [*script.RealmInfo]
 }
 
-script.RemovePreloadScriptCommand = (
+script.RemovePreloadScript = (
   method: "script.removePreloadScript",
   params: script.RemovePreloadScriptParameters
 )
@@ -1540,17 +1666,10 @@ input.PointerCommonProperties = (
   ? pressure: float .default 0.0,
   ? tangentialPressure: float .default 0.0,
   ? twist: (0..359) .default 0,
-  (input.TiltProperties // input.AngleProperties)
-)
-
-input.AngleProperties = (
-  ? altitudeAngle: float .default 0.0,
-  ? azimuthAngle: float .default 0.0,
-)
-
-input.TiltProperties = (
-  ? tiltX: (-90..90) .default 0,
-  ? tiltY: (-90..90) .default 0,
+  ; 0 .. Math.PI / 2
+  ? altitudeAngle: (0.0..1.5707963267948966) .default 0.0,
+  ; 0 .. 2 * Math.PI
+  ? azimuthAngle: (0.0..6.283185307179586) .default 0.0,
 )
 
 input.Origin = "viewport" / "pointer" / input.ElementOrigin

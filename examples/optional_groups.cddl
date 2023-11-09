@@ -1,0 +1,15 @@
+a = { 
+    foo: text,
+    ? (
+        bar: text
+    )
+}
+
+b = {
+    foo: text,
+    ? bar
+}
+
+bar = (
+    bar: text
+)

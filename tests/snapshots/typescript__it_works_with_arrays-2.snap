@@ -1,10 +1,10 @@
 ---
 source: tests/typescript.rs
-assertion_line: 33
+assertion_line: 26
 expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
 export type EquipmentType = ([
-(string),(string)]);
+name:(string),manufacturer:(string)]);
 export type EquipmentType2 = ([
 
 /**
@@ -12,28 +12,29 @@ export type EquipmentType2 = ([
  */
 (string),(string)]);
 export type EquipmentType3 = ([
-...([]|[(string),]),(string)]);
+...([]|[(string)]),(string)]);
 export type EquipmentTolerances = ([
-...(([
-(number),(number)])[])]);
+([
+(number),(number)]),...([
+(number),(number)])[]]);
 export type Person = ({
-  "name":(string),  "age":(number)});
+"name":(string),"age":(number)});
 export type UnlimitedPeople = ([
-...((Person)[])]);
+...(Person[number][])]);
 export type OneOrTwoPeople = ([
-...(|[(Person),]|[(Person),(Person),])]);
+...(|[...Person]|[...Person,...Person])]);
 export type AtMostTwoPeople = ([
-...([]|[(Person),]|[(Person),(Person),])]);
+...([]|[...Person]|[...Person,...Person])]);
 export type AtLeastTwoPeople = ([
-...((Person)[])]);
+...Person,...Person,...Person[number][]]);
 export type OnePerson = ([
-(Person)]);
+...Person]);
 export type TwoPerson = ([
-(Person),(Person)]);
+...Person,...Person]);
 export type OptionalPerson = ([
-...([]|[(Person),])]);
+...([]|[...Person])]);
 export type PersonWithEquipment = ([
-...((Person)[]),...((EquipmentType)[])]);
+...(Person[number][]),...((EquipmentType)[])]);
 export type PersonWithAttrNames = ([
 ...(((Person))[])]);
 export type PersonWithAttrNames1 = ([
@@ -41,5 +42,5 @@ export type PersonWithAttrNames1 = ([
 export type PersonWithAttrNames2 = ([
 ...(((Person))[]),...((EquipmentType)[])]);
 export type PersonWithAttrNames3 = ([
-...(((Person))[]),...([]|[(EquipmentType),])]);
+...(((Person))[]),...([]|[(EquipmentType)])]);
 

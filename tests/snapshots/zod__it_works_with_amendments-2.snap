@@ -1,0 +1,13 @@
+---
+source: tests/zod.rs
+expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export const TerminalColorSchema = z.lazy(() => BasecolorsSchema);
+export const 
+BasecolorsSchema = z.lazy(() => z.object({
+"black":z.literal(0),"red":z.literal(1),"green":z.literal(2),"yellow":z.literal(3),"blue":z.literal(4),"magenta":z.literal(5),"cyan":z.literal(6),"white":z.literal(7)}));
+export const ExtendedColorSchema = z.lazy(() => BasecolorsSchema.and(
+z.object({
+"orange":z.literal(8),"pink":z.literal(9),"purple":z.literal(10),"brown":z.literal(11)}))
+);
+
