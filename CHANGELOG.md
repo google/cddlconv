@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/google/cddlconv/compare/cddlconv-v0.1.1...cddlconv-v0.1.2) (2023-11-10)
+
+
+### Features
+
+* implement occurence across maps and arrays ([#17](https://github.com/google/cddlconv/issues/17)) ([0f63307](https://github.com/google/cddlconv/commit/0f633076882278737001e0211b48d9b75d3869d7))
+
 ## [0.1.1](https://github.com/google/cddlconv/compare/cddlconv-v0.1.0...cddlconv-v0.1.1) (2023-08-21)
 
 
