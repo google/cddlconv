@@ -335,6 +335,12 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 write!(self.stdout, "z.array(");
                 self.visit_type(&entry.entry_type)?;
                 write!(self.stdout, ")");
+                if lower > 0 {
+                    write!(self.stdout, ".min({})", lower);
+                }
+                if upper < usize::MAX {
+                    write!(self.stdout, ".max({})", upper);
+                }
             }
         }
         Ok(())

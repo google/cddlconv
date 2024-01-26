@@ -1,5 +1,6 @@
 ---
 source: tests/zod.rs
+assertion_line: 25
 expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
 export const EventSchema = z.lazy(() => z.object({
@@ -275,7 +276,7 @@ export const HandleUserPromptParametersSchema = z.lazy(() => z.object({
 }
 export namespace BrowsingContext {
 export const LocateNodesParametersSchema = z.lazy(() => z.object({
-"context":BrowsingContext.BrowsingContextSchema,"locator":BrowsingContext.LocatorSchema,"maxNodeCount":JsUintSchema.gte(1).optional(),"ownership":Script.ResultOwnershipSchema.optional(),"sandbox":z.string().optional(),"serializationOptions":Script.SerializationOptionsSchema.optional(),"startNodes":z.array(Script.SharedReferenceSchema).optional()}));
+"context":BrowsingContext.BrowsingContextSchema,"locator":BrowsingContext.LocatorSchema,"maxNodeCount":JsUintSchema.gte(1).optional(),"ownership":Script.ResultOwnershipSchema.optional(),"sandbox":z.string().optional(),"serializationOptions":Script.SerializationOptionsSchema.optional(),"startNodes":z.array(Script.SharedReferenceSchema).min(1).optional()}));
 }
 export namespace BrowsingContext {
 export const 
@@ -434,7 +435,7 @@ export const AuthCredentialsSchema = z.lazy(() => z.object({
 export namespace Network {
 export const 
 BaseParametersSchema = z.lazy(() => z.object({
-"context":z.union([BrowsingContext.BrowsingContextSchema,z.null()]),"isBlocked":z.boolean(),"navigation":z.union([BrowsingContext.NavigationSchema,z.null()]),"redirectCount":JsUintSchema,"request":Network.RequestDataSchema,"timestamp":JsUintSchema,"intercepts":z.array(Network.InterceptSchema).optional()}));
+"context":z.union([BrowsingContext.BrowsingContextSchema,z.null()]),"isBlocked":z.boolean(),"navigation":z.union([BrowsingContext.NavigationSchema,z.null()]),"redirectCount":JsUintSchema,"request":Network.RequestDataSchema,"timestamp":JsUintSchema,"intercepts":z.array(Network.InterceptSchema).min(1).optional()}));
 }
 export namespace Network {
 export const BytesValueSchema = z.lazy(() => z.union([Network.StringValueSchema,Network.Base64ValueSchema]));
@@ -502,7 +503,7 @@ export const UrlPatternStringSchema = z.lazy(() => z.object({
 }
 export namespace Network {
 export const AddInterceptParametersSchema = z.lazy(() => z.object({
-"phases":z.array(Network.InterceptPhaseSchema),"urlPatterns":z.array(Network.UrlPatternSchema).optional()}));
+"phases":z.array(Network.InterceptPhaseSchema).min(1),"urlPatterns":z.array(Network.UrlPatternSchema).optional()}));
 }
 export namespace Network {
 export const 
@@ -965,7 +966,7 @@ AddPreloadScriptSchema = z.lazy(() => z.object({
 }
 export namespace Script {
 export const AddPreloadScriptParametersSchema = z.lazy(() => z.object({
-"functionDeclaration":z.string(),"arguments":z.array(Script.ChannelValueSchema).optional(),"contexts":z.array(BrowsingContext.BrowsingContextSchema).optional(),"sandbox":z.string().optional()}));
+"functionDeclaration":z.string(),"arguments":z.array(Script.ChannelValueSchema).optional(),"contexts":z.array(BrowsingContext.BrowsingContextSchema).min(1).optional(),"sandbox":z.string().optional()}));
 }
 export namespace Script {
 export const AddPreloadScriptResultSchema = z.lazy(() => z.object({
