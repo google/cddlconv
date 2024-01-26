@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/google/cddlconv/compare/cddlconv-v0.1.2...cddlconv-v0.1.3) (2024-01-26)
+
+
+### Features
+
+* implement Zod array requirements ([#20](https://github.com/google/cddlconv/issues/20)) ([6e80283](https://github.com/google/cddlconv/commit/6e80283eb16d51a0e4e971faf624a58ace889399)), closes [#16](https://github.com/google/cddlconv/issues/16)
+
 ## [0.1.2](https://github.com/google/cddlconv/compare/cddlconv-v0.1.1...cddlconv-v0.1.2) (2023-11-10)
 
 
