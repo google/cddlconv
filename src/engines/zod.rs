@@ -453,9 +453,17 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             },
             &tr.generic_params,
         )?;
-        write!(self.stdout, " = z.lazy(() => ");
-        self.visit_type(&tr.value)?;
-        writeln!(self.stdout, ");");
+        write!(self.stdout, " = ");
+        if tr.value.type_choices.len() == 1
+            && is_primitive_type(&tr.value.type_choices.first().unwrap().type1.type2)
+        {
+            self.visit_type(&tr.value)?;
+        } else {
+            write!(self.stdout, "z.lazy(() => ");
+            self.visit_type(&tr.value)?;
+            write!(self.stdout, ")");
+        }
+        writeln!(self.stdout, ";");
         for _ in &namespaces {
             writeln!(self.stdout, "}}");
         }
@@ -782,4 +790,19 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         };
         Ok(())
     }
+}
+
+fn is_primitive_type(type2: &cddl::ast::Type2) -> bool {
+    !matches!(
+        type2,
+        cddl::ast::Type2::Typename { .. }
+            | cddl::ast::Type2::ParenthesizedType { .. }
+            | cddl::ast::Type2::Map { .. }
+            | cddl::ast::Type2::Unwrap { .. }
+            | cddl::ast::Type2::ChoiceFromInlineGroup { .. }
+            | cddl::ast::Type2::ChoiceFromGroup { .. }
+            | cddl::ast::Type2::TaggedData { .. }
+            | cddl::ast::Type2::DataMajorType { .. }
+            | cddl::ast::Type2::Any { .. }
+    )
 }
