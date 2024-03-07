@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/google/cddlconv/compare/cddlconv-v0.1.4...cddlconv-v0.1.5) (2024-03-07)
+
+
+### Bug Fixes
+
+* missing array as non-primitive type ([#27](https://github.com/google/cddlconv/issues/27)) ([19a824b](https://github.com/google/cddlconv/commit/19a824b775655c197752b856090ca250020cedb0))
+
 ## [0.1.4](https://github.com/google/cddlconv/compare/cddlconv-v0.1.3...cddlconv-v0.1.4) (2024-03-07)
 
 
