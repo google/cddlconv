@@ -797,6 +797,7 @@ fn is_primitive_type(type2: &cddl::ast::Type2) -> bool {
         type2,
         cddl::ast::Type2::Typename { .. }
             | cddl::ast::Type2::ParenthesizedType { .. }
+            | cddl::ast::Type2::Array { .. }
             | cddl::ast::Type2::Map { .. }
             | cddl::ast::Type2::Unwrap { .. }
             | cddl::ast::Type2::ChoiceFromInlineGroup { .. }
