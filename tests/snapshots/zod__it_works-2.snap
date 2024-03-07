@@ -159,7 +159,7 @@ export namespace BrowsingContext {
 export const BrowsingContextSchema = z.lazy(() => z.string());
 }
 export namespace BrowsingContext {
-export const InfoListSchema = z.array(BrowsingContext.InfoSchema);
+export const InfoListSchema = z.lazy(() => z.array(BrowsingContext.InfoSchema));
 }
 export namespace BrowsingContext {
 export const InfoSchema = z.lazy(() => z.object({
@@ -676,7 +676,7 @@ export namespace Script {
 export const InternalIdSchema = z.lazy(() => z.string());
 }
 export namespace Script {
-export const ListLocalValueSchema = z.array(Script.LocalValueSchema);
+export const ListLocalValueSchema = z.lazy(() => z.array(Script.LocalValueSchema));
 }
 export namespace Script {
 export const LocalValueSchema = z.lazy(() => z.union([Script.RemoteReferenceSchema,Script.PrimitiveProtocolValueSchema,Script.ChannelValueSchema,Script.ArrayLocalValueSchema,Script.DateLocalValueSchema,Script.MapLocalValueSchema,Script.ObjectLocalValueSchema,Script.RegExpLocalValueSchema,Script.SetLocalValueSchema]));
@@ -690,8 +690,8 @@ export const DateLocalValueSchema = z.lazy(() => z.object({
 "type":z.literal("date"),"value":z.string()}));
 }
 export namespace Script {
-export const MappingLocalValueSchema = z.array(z.tuple([
-z.union([Script.LocalValueSchema,z.string()]),Script.LocalValueSchema]));
+export const MappingLocalValueSchema = z.lazy(() => z.array(z.tuple([
+z.union([Script.LocalValueSchema,z.string()]),Script.LocalValueSchema])));
 }
 export namespace Script {
 export const MapLocalValueSchema = z.lazy(() => z.object({
@@ -809,11 +809,11 @@ export namespace Script {
 export const RealmTypeSchema = z.lazy(() => z.enum(["window","dedicated-worker","shared-worker","service-worker","worker","paint-worklet","audio-worklet","worklet",]));
 }
 export namespace Script {
-export const ListRemoteValueSchema = z.array(Script.RemoteValueSchema);
+export const ListRemoteValueSchema = z.lazy(() => z.array(Script.RemoteValueSchema));
 }
 export namespace Script {
-export const MappingRemoteValueSchema = z.array(z.tuple([
-z.union([Script.RemoteValueSchema,z.string()]),Script.RemoteValueSchema]));
+export const MappingRemoteValueSchema = z.lazy(() => z.array(z.tuple([
+z.union([Script.RemoteValueSchema,z.string()]),Script.RemoteValueSchema])));
 }
 export namespace Script {
 export const RemoteValueSchema = z.lazy(() => z.union([Script.PrimitiveProtocolValueSchema,Script.SymbolRemoteValueSchema,Script.ArrayRemoteValueSchema,Script.ObjectRemoteValueSchema,Script.FunctionRemoteValueSchema,Script.RegExpRemoteValueSchema,Script.DateRemoteValueSchema,Script.MapRemoteValueSchema,Script.SetRemoteValueSchema,Script.WeakMapRemoteValueSchema,Script.WeakSetRemoteValueSchema,Script.IteratorRemoteValueSchema,Script.GeneratorRemoteValueSchema,Script.ErrorRemoteValueSchema,Script.ProxyRemoteValueSchema,Script.PromiseRemoteValueSchema,Script.TypedArrayRemoteValueSchema,Script.ArrayBufferRemoteValueSchema,Script.NodeListRemoteValueSchema,Script.HtmlCollectionRemoteValueSchema,Script.NodeRemoteValueSchema,Script.WindowProxyRemoteValueSchema]));
