@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/google/cddlconv/compare/cddlconv-v0.1.3...cddlconv-v0.1.4) (2024-03-07)
+
+
+### Bug Fixes
+
+* don't use `z.lazy` for primitive types ([#24](https://github.com/google/cddlconv/issues/24)) ([8d2a872](https://github.com/google/cddlconv/commit/8d2a8722b9e76926adb5477288495ef18669f460))
+
 ## [0.1.3](https://github.com/google/cddlconv/compare/cddlconv-v0.1.2...cddlconv-v0.1.3) (2024-01-26)
 
 
