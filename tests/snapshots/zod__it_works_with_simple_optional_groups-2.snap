@@ -1,0 +1,20 @@
+---
+source: tests/zod.rs
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export namespace Bluetooth {
+export const HandleRequestDevicePromptParametersSchema = z.lazy(() => z.object({
+"context":z.string(),"prompt":z.string()}).and(
+z.union([Bluetooth.HandleRequestDevicePromptAcceptParametersSchema,Bluetooth.HandleRequestDevicePromptCancelParametersSchema]))
+);
+}
+export namespace Bluetooth {
+export const 
+HandleRequestDevicePromptAcceptParametersSchema = z.lazy(() => z.object({
+"accept":z.literal(true),"device":z.string()}));
+}
+export namespace Bluetooth {
+export const 
+HandleRequestDevicePromptCancelParametersSchema = z.lazy(() => z.object({
+"accept":z.literal(false)}));
+}

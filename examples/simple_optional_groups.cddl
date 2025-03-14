@@ -1,0 +1,17 @@
+bluetooth.HandleRequestDevicePromptParameters = {
+   context: text,
+   prompt: text,
+   (
+       bluetooth.HandleRequestDevicePromptAcceptParameters //
+       bluetooth.HandleRequestDevicePromptCancelParameters
+   )
+}
+
+bluetooth.HandleRequestDevicePromptAcceptParameters = (
+   accept: true,
+   device: text,
+)
+
+bluetooth.HandleRequestDevicePromptCancelParameters = (
+   accept: false,
+)
