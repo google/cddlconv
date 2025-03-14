@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/google/cddlconv/compare/cddlconv-v0.1.5...cddlconv-v0.1.6) (2025-03-14)
+
+
+### Bug Fixes
+
+* lock cddl version to 0.9.4 in Cargo.toml ([#35](https://github.com/google/cddlconv/issues/35)) ([9e84faf](https://github.com/google/cddlconv/commit/9e84faf56d14bfe8370dbbfc047cf92d0716c947))
+
 ## [0.1.5](https://github.com/google/cddlconv/compare/cddlconv-v0.1.4...cddlconv-v0.1.5) (2024-03-07)
 
 
