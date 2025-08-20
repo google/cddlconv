@@ -30,3 +30,4 @@ test!(
 );
 test!(it_works_with_optional_groups, "examples/optional_groups.cddl");
 test!(it_works_with_simple_optional_groups, "examples/simple_optional_groups.cddl");
+test!(it_works_with_array_occurences, "examples/array_occurences.cddl");
