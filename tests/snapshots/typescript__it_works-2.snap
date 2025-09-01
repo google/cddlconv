@@ -1,22 +1,21 @@
 ---
 source: tests/typescript.rs
-assertion_line: 25
-expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
-export type Event = (({
-"type":("event")}&EventData&Extensible));
 export type Command = (({
 "id":(JsUint)}&CommandData&Extensible));
-export type CommandResponse = (({
-"type":("success"),"id":(JsUint),"result":(ResultData)}&Extensible));
-export type EventData = (BrowsingContextEvent| LogEvent| NetworkEvent| ScriptEvent);
 export type CommandData = (BrowserCommand| BrowsingContextCommand| InputCommand| NetworkCommand| ScriptCommand| SessionCommand);
-export type ResultData = ((BrowsingContextResult| EmptyResult| NetworkResult| ScriptResult| SessionResult));
 export type EmptyParams = ((Extensible));
 export type Message = ((CommandResponse| ErrorResponse| Event));
+export type CommandResponse = (({
+"type":("success"),"id":(JsUint),"result":(ResultData)}&Extensible));
 export type ErrorResponse = (({
 "type":("error"),"id":(JsUint| null),"error":(ErrorCode),"message":(string),"stacktrace"?:(string)}&Extensible));
+export type ResultData = ((BrowsingContextResult| EmptyResult| NetworkResult| ScriptResult| SessionResult));
 export type EmptyResult = ((Extensible));
+export type Event = (({
+"type":("event")}&EventData&Extensible));
+export type EventData = (BrowsingContextEvent| LogEvent| NetworkEvent| ScriptEvent);
 export type Extensible = ({
 [key: string]:(any)});
 
@@ -49,10 +48,6 @@ UnknownError = "unknown error",
 UnsupportedOperation = "unsupported operation",
 }
 export type SessionCommand = (Session.End| Session.New| Session.Status| Session.Subscribe| Session.Unsubscribe);
-export namespace Session {
-export type ProxyConfiguration = ((Session.AutodetectProxyConfiguration| Session.DirectProxyConfiguration| Session.ManualProxyConfiguration| Session.PacProxyConfiguration| Session.SystemProxyConfiguration| Record<string, never>
-));
-}
 export type SessionResult = ((Session.NewResult| Session.StatusResult));
 export namespace Session {
 export type CapabilitiesRequest = (({
@@ -62,6 +57,10 @@ export type CapabilitiesRequest = (({
 export namespace Session {
 export type CapabilityRequest = (({
 "acceptInsecureCerts"?:(boolean),"browserName"?:(string),"browserVersion"?:(string),"platformName"?:(string),"proxy"?:(Session.ProxyConfiguration),"webSocketUrl"?:(boolean)}&Extensible));
+}
+export namespace Session {
+export type ProxyConfiguration = ((Session.AutodetectProxyConfiguration| Session.DirectProxyConfiguration| Session.ManualProxyConfiguration| Session.PacProxyConfiguration| Session.SystemProxyConfiguration| Record<string, never>
+));
 }
 export namespace Session {
 export type AutodetectProxyConfiguration = ({
@@ -138,8 +137,8 @@ export type Close = ({
 "method":("browser.close"),"params":(EmptyParams)});
 }
 export type BrowsingContextCommand = (BrowsingContext.Activate| BrowsingContext.CaptureScreenshot| BrowsingContext.Close| BrowsingContext.Create| BrowsingContext.GetTree| BrowsingContext.HandleUserPrompt| BrowsingContext.LocateNodes| BrowsingContext.Navigate| BrowsingContext.Print| BrowsingContext.Reload| BrowsingContext.SetViewport| BrowsingContext.TraverseHistory);
-export type BrowsingContextEvent = (BrowsingContext.ContextCreated| BrowsingContext.ContextDestroyed| BrowsingContext.DomContentLoaded| BrowsingContext.DownloadWillBegin| BrowsingContext.FragmentNavigated| BrowsingContext.Load| BrowsingContext.NavigationAborted| BrowsingContext.NavigationFailed| BrowsingContext.NavigationStarted| BrowsingContext.UserPromptClosed| BrowsingContext.UserPromptOpened);
 export type BrowsingContextResult = ((BrowsingContext.CaptureScreenshotResult| BrowsingContext.CreateResult| BrowsingContext.GetTreeResult| BrowsingContext.LocateNodesResult| BrowsingContext.NavigateResult| BrowsingContext.PrintResult| BrowsingContext.TraverseHistoryResult));
+export type BrowsingContextEvent = (BrowsingContext.ContextCreated| BrowsingContext.ContextDestroyed| BrowsingContext.DomContentLoaded| BrowsingContext.DownloadWillBegin| BrowsingContext.FragmentNavigated| BrowsingContext.Load| BrowsingContext.NavigationAborted| BrowsingContext.NavigationFailed| BrowsingContext.NavigationStarted| BrowsingContext.UserPromptClosed| BrowsingContext.UserPromptOpened);
 export namespace BrowsingContext {
 export type BrowsingContext = (string);
 }
@@ -188,16 +187,16 @@ export type ActivateParameters = (({
 "context":(BrowsingContext.BrowsingContext)}));
 }
 export namespace BrowsingContext {
+export type CaptureScreenshot = ({
+"method":("browsingContext.captureScreenshot"),"params":(BrowsingContext.CaptureScreenshotParameters)});
+}
+export namespace BrowsingContext {
 export type CaptureScreenshotParameters = (({
 "context":(BrowsingContext.BrowsingContext),
 /**
  * @defaultValue `"viewport"`
  */
 "origin"?:(("viewport"| "document")),"format"?:(BrowsingContext.ImageFormat),"clip"?:(BrowsingContext.ClipRectangle)}));
-}
-export namespace BrowsingContext {
-export type CaptureScreenshot = ({
-"method":("browsingContext.captureScreenshot"),"params":(BrowsingContext.CaptureScreenshotParameters)});
 }
 export namespace BrowsingContext {
 export type ImageFormat = (({
@@ -276,6 +275,10 @@ export type HandleUserPromptParameters = (({
 "context":(BrowsingContext.BrowsingContext),"accept"?:(boolean),"userText"?:(string)}));
 }
 export namespace BrowsingContext {
+export type LocateNodes = ({
+"method":("browsingContext.locateNodes"),"params":(BrowsingContext.LocateNodesParameters)});
+}
+export namespace BrowsingContext {
 export type LocateNodesParameters = (({
 "context":(BrowsingContext.BrowsingContext),"locator":(BrowsingContext.Locator),
 /**
@@ -283,10 +286,6 @@ export type LocateNodesParameters = (({
  */
 "maxNodeCount"?:((JsUint)),"ownership"?:(Script.ResultOwnership),"sandbox"?:(string),"serializationOptions"?:(Script.SerializationOptions),"startNodes"?:([
 (Script.SharedReference),...(Script.SharedReference)[]])}));
-}
-export namespace BrowsingContext {
-export type LocateNodes = ({
-"method":("browsingContext.locateNodes"),"params":(BrowsingContext.LocateNodesParameters)});
 }
 export namespace BrowsingContext {
 export type LocateNodesResult = (({
@@ -469,8 +468,8 @@ export type UserPromptOpenedParameters = (({
 "context":(BrowsingContext.BrowsingContext),"type":("alert"| "confirm"| "prompt"| "beforeunload"),"message":(string),"defaultValue"?:(string)}));
 }
 export type NetworkCommand = (Network.AddIntercept| Network.ContinueRequest| Network.ContinueResponse| Network.ContinueWithAuth| Network.FailRequest| Network.ProvideResponse| Network.RemoveIntercept);
+export type NetworkResult = (Network.AddInterceptResult);
 export type NetworkEvent = (Network.AuthRequired| Network.BeforeRequestSent| Network.FetchError| Network.ResponseCompleted| Network.ResponseStarted);
-export type NetworkResult = ((Network.AddInterceptResult));
 export namespace Network {
 export type AuthChallenge = (({
 "scheme":(string),"realm":(string)}));
@@ -552,14 +551,14 @@ export type UrlPatternString = (({
 "type":("string"),"pattern":(string)}));
 }
 export namespace Network {
+export type AddIntercept = ({
+"method":("network.addIntercept"),"params":(Network.AddInterceptParameters)});
+}
+export namespace Network {
 export type AddInterceptParameters = (({
 "phases":([
 (Network.InterceptPhase),...(Network.InterceptPhase)[]]),"urlPatterns"?:([
 ...((Network.UrlPattern)[])])}));
-}
-export namespace Network {
-export type AddIntercept = ({
-"method":("network.addIntercept"),"params":(Network.AddInterceptParameters)});
 }
 export namespace Network {
 export const enum InterceptPhase {BeforeRequestSent = "beforeRequestSent",
@@ -633,22 +632,41 @@ export namespace Network {
 export type RemoveInterceptParameters = (({
 "intercept":(Network.Intercept)}));
 }
-export type ScriptEvent = (Script.Message| Script.RealmCreated| Script.RealmDestroyed);
+export namespace Network {
+export type AuthRequired = ({
+"method":("network.authRequired"),"params":(Network.AuthRequiredParameters)});
+}
 export namespace Network {
 export type AuthRequiredParameters = ((Network.BaseParameters&{
 "response":(Network.ResponseData)}));
+}
+export namespace Network {
+export type BeforeRequestSent = ({
+"method":("network.beforeRequestSent"),"params":(Network.BeforeRequestSentParameters)});
 }
 export namespace Network {
 export type BeforeRequestSentParameters = ((Network.BaseParameters&{
 "initiator":(Network.Initiator)}));
 }
 export namespace Network {
+export type FetchError = ({
+"method":("network.fetchError"),"params":(Network.FetchErrorParameters)});
+}
+export namespace Network {
 export type FetchErrorParameters = ((Network.BaseParameters&{
 "errorText":(string)}));
 }
 export namespace Network {
+export type ResponseCompleted = ({
+"method":("network.responseCompleted"),"params":(Network.ResponseCompletedParameters)});
+}
+export namespace Network {
 export type ResponseCompletedParameters = ((Network.BaseParameters&{
 "response":(Network.ResponseData)}));
+}
+export namespace Network {
+export type ResponseStarted = ({
+"method":("network.responseStarted"),"params":(Network.ResponseStartedParameters)});
 }
 export namespace Network {
 export type ResponseStartedParameters = ((Network.BaseParameters&{
@@ -656,36 +674,9 @@ export type ResponseStartedParameters = ((Network.BaseParameters&{
 }
 export type ScriptCommand = (Script.AddPreloadScript| Script.CallFunction| Script.Disown| Script.Evaluate| Script.GetRealms| Script.RemovePreloadScript);
 export type ScriptResult = ((Script.AddPreloadScriptResult| Script.EvaluateResult| Script.GetRealmsResult));
-export namespace Network {
-export type AuthRequired = ({
-"method":("network.authRequired"),"params":(Network.AuthRequiredParameters)});
-}
-export namespace Network {
-export type BeforeRequestSent = ({
-"method":("network.beforeRequestSent"),"params":(Network.BeforeRequestSentParameters)});
-}
-export namespace Network {
-export type FetchError = ({
-"method":("network.fetchError"),"params":(Network.FetchErrorParameters)});
-}
-export namespace Network {
-export type ResponseCompleted = ({
-"method":("network.responseCompleted"),"params":(Network.ResponseCompletedParameters)});
-}
-export namespace Network {
-export type ResponseStarted = ({
-"method":("network.responseStarted"),"params":(Network.ResponseStartedParameters)});
-}
+export type ScriptEvent = (Script.Message| Script.RealmCreated| Script.RealmDestroyed);
 export namespace Script {
 export type Channel = (string);
-}
-export namespace Script {
-export type EvaluateResultSuccess = (({
-"type":("success"),"result":(Script.RemoteValue),"realm":(Script.Realm)}));
-}
-export namespace Script {
-export type ExceptionDetails = (({
-"columnNumber":(JsUint),"exception":(Script.RemoteValue),"lineNumber":(JsUint),"stackTrace":(Script.StackTrace),"text":(string)}));
 }
 export namespace Script {
 export type ChannelValue = (({
@@ -699,8 +690,16 @@ export namespace Script {
 export type EvaluateResult = ((Script.EvaluateResultSuccess| Script.EvaluateResultException));
 }
 export namespace Script {
+export type EvaluateResultSuccess = (({
+"type":("success"),"result":(Script.RemoteValue),"realm":(Script.Realm)}));
+}
+export namespace Script {
 export type EvaluateResultException = (({
 "type":("exception"),"exceptionDetails":(Script.ExceptionDetails),"realm":(Script.Realm)}));
+}
+export namespace Script {
+export type ExceptionDetails = (({
+"columnNumber":(JsUint),"exception":(Script.RemoteValue),"lineNumber":(JsUint),"stackTrace":(Script.StackTrace),"text":(string)}));
 }
 export namespace Script {
 export type Handle = (string);
@@ -709,11 +708,11 @@ export namespace Script {
 export type InternalId = (string);
 }
 export namespace Script {
-export type ListLocalValue = ([
-...((Script.LocalValue)[])]);
+export type LocalValue = ((Script.RemoteReference| Script.PrimitiveProtocolValue| Script.ChannelValue| Script.ArrayLocalValue| Script.DateLocalValue| Script.MapLocalValue| Script.ObjectLocalValue| Script.RegExpLocalValue| Script.SetLocalValue));
 }
 export namespace Script {
-export type LocalValue = ((Script.RemoteReference| Script.PrimitiveProtocolValue| Script.ChannelValue| Script.ArrayLocalValue| Script.DateLocalValue| Script.MapLocalValue| Script.ObjectLocalValue| Script.RegExpLocalValue| Script.SetLocalValue));
+export type ListLocalValue = ([
+...((Script.LocalValue)[])]);
 }
 export namespace Script {
 export type ArrayLocalValue = (({
@@ -827,18 +826,6 @@ export namespace Script {
 export type RealmType = ("window"| "dedicated-worker"| "shared-worker"| "service-worker"| "worker"| "paint-worklet"| "audio-worklet"| "worklet");
 }
 export namespace Script {
-export type ListRemoteValue = ([
-...((Script.RemoteValue)[])]);
-}
-export namespace Script {
-export type MappingRemoteValue = ([
-...(([
-(Script.RemoteValue| string),(Script.RemoteValue)])[])]);
-}
-export namespace Script {
-export type RemoteValue = ((Script.PrimitiveProtocolValue| Script.SymbolRemoteValue| Script.ArrayRemoteValue| Script.ObjectRemoteValue| Script.FunctionRemoteValue| Script.RegExpRemoteValue| Script.DateRemoteValue| Script.MapRemoteValue| Script.SetRemoteValue| Script.WeakMapRemoteValue| Script.WeakSetRemoteValue| Script.IteratorRemoteValue| Script.GeneratorRemoteValue| Script.ErrorRemoteValue| Script.ProxyRemoteValue| Script.PromiseRemoteValue| Script.TypedArrayRemoteValue| Script.ArrayBufferRemoteValue| Script.NodeListRemoteValue| Script.HtmlCollectionRemoteValue| Script.NodeRemoteValue| Script.WindowProxyRemoteValue));
-}
-export namespace Script {
 export type RemoteReference = ((Script.SharedReference| Script.RemoteObjectReference));
 }
 export namespace Script {
@@ -848,6 +835,18 @@ export type SharedReference = (({
 export namespace Script {
 export type RemoteObjectReference = (({
 "handle":(Script.Handle),"sharedId"?:(Script.SharedId)}&Extensible));
+}
+export namespace Script {
+export type RemoteValue = ((Script.PrimitiveProtocolValue| Script.SymbolRemoteValue| Script.ArrayRemoteValue| Script.ObjectRemoteValue| Script.FunctionRemoteValue| Script.RegExpRemoteValue| Script.DateRemoteValue| Script.MapRemoteValue| Script.SetRemoteValue| Script.WeakMapRemoteValue| Script.WeakSetRemoteValue| Script.IteratorRemoteValue| Script.GeneratorRemoteValue| Script.ErrorRemoteValue| Script.ProxyRemoteValue| Script.PromiseRemoteValue| Script.TypedArrayRemoteValue| Script.ArrayBufferRemoteValue| Script.NodeListRemoteValue| Script.HtmlCollectionRemoteValue| Script.NodeRemoteValue| Script.WindowProxyRemoteValue));
+}
+export namespace Script {
+export type ListRemoteValue = ([
+...((Script.RemoteValue)[])]);
+}
+export namespace Script {
+export type MappingRemoteValue = ([
+...(([
+(Script.RemoteValue| string),(Script.RemoteValue)])[])]);
 }
 export namespace Script {
 export type SymbolRemoteValue = (({
@@ -1017,6 +1016,10 @@ export type DisownParameters = (({
 ...((Script.Handle)[])]),"target":(Script.Target)}));
 }
 export namespace Script {
+export type CallFunction = ({
+"method":("script.callFunction"),"params":(Script.CallFunctionParameters)});
+}
+export namespace Script {
 export type CallFunctionParameters = (({
 "functionDeclaration":(string),"awaitPromise":(boolean),"target":(Script.Target),"arguments"?:([
 ...((Script.LocalValue)[])]),"resultOwnership"?:(Script.ResultOwnership),"serializationOptions"?:(Script.SerializationOptions),"this"?:(Script.LocalValue),
@@ -1024,10 +1027,6 @@ export type CallFunctionParameters = (({
  * @defaultValue `false`
  */
 "userActivation"?:(boolean)}));
-}
-export namespace Script {
-export type CallFunction = ({
-"method":("script.callFunction"),"params":(Script.CallFunctionParameters)});
 }
 export namespace Script {
 export type Evaluate = ({
@@ -1063,16 +1062,16 @@ export type RemovePreloadScriptParameters = (({
 "script":(Script.PreloadScript)}));
 }
 export namespace Script {
+export type Message = ({
+"method":("script.message"),"params":(Script.MessageParameters)});
+}
+export namespace Script {
 export type MessageParameters = (({
 "channel":(Script.Channel),"data":(Script.RemoteValue),"source":(Script.Source)}));
 }
 export namespace Script {
 export type RealmCreated = ({
 "method":("script.realmCreated"),"params":(Script.RealmInfo)});
-}
-export namespace Script {
-export type Message = ({
-"method":("script.message"),"params":(Script.MessageParameters)});
 }
 export namespace Script {
 export type RealmDestroyed = ({
@@ -1120,9 +1119,16 @@ export type ElementOrigin = (({
 "type":("element"),"element":(Script.SharedReference)}));
 }
 export namespace Input {
+export type PerformActions = ({
+"method":("input.performActions"),"params":(Input.PerformActionsParameters)});
+}
+export namespace Input {
 export type PerformActionsParameters = (({
 "context":(BrowsingContext.BrowsingContext),"actions":([
 ...((Input.SourceActions)[])])}));
+}
+export namespace Input {
+export type SourceActions = ((Input.NoneSourceActions| Input.KeySourceActions| Input.PointerSourceActions| Input.WheelSourceActions));
 }
 export namespace Input {
 export type NoneSourceActions = (({
@@ -1130,27 +1136,20 @@ export type NoneSourceActions = (({
 ...((Input.NoneSourceAction)[])])}));
 }
 export namespace Input {
+export type NoneSourceAction = (Input.PauseAction);
+}
+export namespace Input {
 export type KeySourceActions = (({
 "type":("key"),"id":(string),"actions":([
 ...((Input.KeySourceAction)[])])}));
 }
 export namespace Input {
+export type KeySourceAction = ((Input.PauseAction| Input.KeyDownAction| Input.KeyUpAction));
+}
+export namespace Input {
 export type PointerSourceActions = (({
 "type":("pointer"),"id":(string),"parameters"?:(Input.PointerParameters),"actions":([
 ...((Input.PointerSourceAction)[])])}));
-}
-export namespace Input {
-export type PerformActions = ({
-"method":("input.performActions"),"params":(Input.PerformActionsParameters)});
-}
-export namespace Input {
-export type SourceActions = ((Input.NoneSourceActions| Input.KeySourceActions| Input.PointerSourceActions| Input.WheelSourceActions));
-}
-export namespace Input {
-export type NoneSourceAction = (Input.PauseAction);
-}
-export namespace Input {
-export type KeySourceAction = ((Input.PauseAction| Input.KeyDownAction| Input.KeyUpAction));
 }
 export namespace Input {
 export const enum PointerType {Mouse = "mouse",
@@ -1167,12 +1166,12 @@ export type PointerParameters = (({
 "pointerType"?:(Input.PointerType)}));
 }
 export namespace Input {
+export type PointerSourceAction = ((Input.PauseAction| Input.PointerDownAction| Input.PointerUpAction| Input.PointerMoveAction));
+}
+export namespace Input {
 export type WheelSourceActions = (({
 "type":("wheel"),"id":(string),"actions":([
 ...((Input.WheelSourceAction)[])])}));
-}
-export namespace Input {
-export type PointerSourceAction = ((Input.PauseAction| Input.PointerDownAction| Input.PointerUpAction| Input.PointerMoveAction));
 }
 export namespace Input {
 export type WheelSourceAction = ((Input.PauseAction| Input.WheelScrollAction));
@@ -1258,4 +1257,3 @@ export namespace Input {
 export type ReleaseActionsParameters = (({
 "context":(BrowsingContext.BrowsingContext)}));
 }
-
