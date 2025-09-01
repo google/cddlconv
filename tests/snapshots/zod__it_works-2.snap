@@ -1,36 +1,35 @@
 ---
 source: tests/zod.rs
-assertion_line: 25
-expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
-export const EventSchema = z.lazy(() => z.object({
-"type":z.literal("event")}).and(
-EventDataSchema)
-.and(
-ExtensibleSchema)
-);
 export const CommandSchema = z.lazy(() => z.object({
 "id":JsUintSchema}).and(
 CommandDataSchema)
 .and(
 ExtensibleSchema)
 );
+export const 
+CommandDataSchema = z.lazy(() => z.union([BrowserCommandSchema,BrowsingContextCommandSchema,InputCommandSchema,NetworkCommandSchema,ScriptCommandSchema,SessionCommandSchema]));
+export const EmptyParamsSchema = z.lazy(() => ExtensibleSchema);
+export const MessageSchema = z.lazy(() => z.union([CommandResponseSchema,ErrorResponseSchema,EventSchema]));
 export const CommandResponseSchema = z.lazy(() => z.object({
 "type":z.literal("success"),"id":JsUintSchema,"result":ResultDataSchema}).and(
 ExtensibleSchema)
 );
-export const 
-EventDataSchema = z.lazy(() => z.union([BrowsingContextEventSchema,LogEventSchema,NetworkEventSchema,ScriptEventSchema]));
-export const 
-CommandDataSchema = z.lazy(() => z.union([BrowserCommandSchema,BrowsingContextCommandSchema,InputCommandSchema,NetworkCommandSchema,ScriptCommandSchema,SessionCommandSchema]));
-export const ResultDataSchema = z.lazy(() => z.union([BrowsingContextResultSchema,EmptyResultSchema,NetworkResultSchema,ScriptResultSchema,SessionResultSchema]));
-export const EmptyParamsSchema = z.lazy(() => ExtensibleSchema);
-export const MessageSchema = z.lazy(() => z.union([CommandResponseSchema,ErrorResponseSchema,EventSchema]));
 export const ErrorResponseSchema = z.lazy(() => z.object({
 "type":z.literal("error"),"id":z.union([JsUintSchema,z.null()]),"error":ErrorCodeSchema,"message":z.string(),"stacktrace":z.string().optional()}).and(
 ExtensibleSchema)
 );
+export const ResultDataSchema = z.lazy(() => z.union([BrowsingContextResultSchema,EmptyResultSchema,NetworkResultSchema,ScriptResultSchema,SessionResultSchema]));
 export const EmptyResultSchema = z.lazy(() => ExtensibleSchema);
+export const EventSchema = z.lazy(() => z.object({
+"type":z.literal("event")}).and(
+EventDataSchema)
+.and(
+ExtensibleSchema)
+);
+export const 
+EventDataSchema = z.lazy(() => z.union([BrowsingContextEventSchema,LogEventSchema,NetworkEventSchema,ScriptEventSchema]));
 export const 
 ExtensibleSchema = z.lazy(() => z.record(
 z.string(),z.any()));
@@ -39,10 +38,6 @@ export const JsUintSchema = z.number().int().nonnegative().gte(0).lte(9007199254
 export const ErrorCodeSchema = z.lazy(() => z.enum(["invalid argument","invalid session id","move target out of bounds","no such alert","no such element","no such frame","no such handle","no such history entry","no such intercept","no such node","no such request","no such script","session not created","unable to capture screen","unable to close browser","unknown command","unknown error","unsupported operation",]));
 export const 
 SessionCommandSchema = z.lazy(() => z.union([Session.EndSchema,Session.NewSchema,Session.StatusSchema,Session.SubscribeSchema,Session.UnsubscribeSchema]));
-export namespace Session {
-export const ProxyConfigurationSchema = z.lazy(() => z.union([Session.AutodetectProxyConfigurationSchema,Session.DirectProxyConfigurationSchema,Session.ManualProxyConfigurationSchema,Session.PacProxyConfigurationSchema,Session.SystemProxyConfigurationSchema,z.object({
-})]));
-}
 export const SessionResultSchema = z.lazy(() => z.union([Session.NewResultSchema,Session.StatusResultSchema]));
 export namespace Session {
 export const CapabilitiesRequestSchema = z.lazy(() => z.object({
@@ -53,6 +48,10 @@ export const CapabilityRequestSchema = z.lazy(() => z.object({
 "acceptInsecureCerts":z.boolean().optional(),"browserName":z.string().optional(),"browserVersion":z.string().optional(),"platformName":z.string().optional(),"proxy":Session.ProxyConfigurationSchema.optional(),"webSocketUrl":z.boolean().optional()}).and(
 ExtensibleSchema)
 );
+}
+export namespace Session {
+export const ProxyConfigurationSchema = z.lazy(() => z.union([Session.AutodetectProxyConfigurationSchema,Session.DirectProxyConfigurationSchema,Session.ManualProxyConfigurationSchema,Session.PacProxyConfigurationSchema,Session.SystemProxyConfigurationSchema,z.object({
+})]));
 }
 export namespace Session {
 export const 
@@ -152,9 +151,9 @@ CloseSchema = z.lazy(() => z.object({
 }
 export const 
 BrowsingContextCommandSchema = z.lazy(() => z.union([BrowsingContext.ActivateSchema,BrowsingContext.CaptureScreenshotSchema,BrowsingContext.CloseSchema,BrowsingContext.CreateSchema,BrowsingContext.GetTreeSchema,BrowsingContext.HandleUserPromptSchema,BrowsingContext.LocateNodesSchema,BrowsingContext.NavigateSchema,BrowsingContext.PrintSchema,BrowsingContext.ReloadSchema,BrowsingContext.SetViewportSchema,BrowsingContext.TraverseHistorySchema]));
+export const BrowsingContextResultSchema = z.lazy(() => z.union([BrowsingContext.CaptureScreenshotResultSchema,BrowsingContext.CreateResultSchema,BrowsingContext.GetTreeResultSchema,BrowsingContext.LocateNodesResultSchema,BrowsingContext.NavigateResultSchema,BrowsingContext.PrintResultSchema,BrowsingContext.TraverseHistoryResultSchema]));
 export const 
 BrowsingContextEventSchema = z.lazy(() => z.union([BrowsingContext.ContextCreatedSchema,BrowsingContext.ContextDestroyedSchema,BrowsingContext.DomContentLoadedSchema,BrowsingContext.DownloadWillBeginSchema,BrowsingContext.FragmentNavigatedSchema,BrowsingContext.LoadSchema,BrowsingContext.NavigationAbortedSchema,BrowsingContext.NavigationFailedSchema,BrowsingContext.NavigationStartedSchema,BrowsingContext.UserPromptClosedSchema,BrowsingContext.UserPromptOpenedSchema]));
-export const BrowsingContextResultSchema = z.lazy(() => z.union([BrowsingContext.CaptureScreenshotResultSchema,BrowsingContext.CreateResultSchema,BrowsingContext.GetTreeResultSchema,BrowsingContext.LocateNodesResultSchema,BrowsingContext.NavigateResultSchema,BrowsingContext.PrintResultSchema,BrowsingContext.TraverseHistoryResultSchema]));
 export namespace BrowsingContext {
 export const BrowsingContextSchema = z.lazy(() => z.string());
 }
@@ -200,13 +199,13 @@ export const ActivateParametersSchema = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema}));
 }
 export namespace BrowsingContext {
-export const CaptureScreenshotParametersSchema = z.lazy(() => z.object({
-"context":BrowsingContext.BrowsingContextSchema,"origin":z.enum(["viewport","document",]).default("viewport").optional(),"format":BrowsingContext.ImageFormatSchema.optional(),"clip":BrowsingContext.ClipRectangleSchema.optional()}));
-}
-export namespace BrowsingContext {
 export const 
 CaptureScreenshotSchema = z.lazy(() => z.object({
 "method":z.literal("browsingContext.captureScreenshot"),"params":BrowsingContext.CaptureScreenshotParametersSchema}));
+}
+export namespace BrowsingContext {
+export const CaptureScreenshotParametersSchema = z.lazy(() => z.object({
+"context":BrowsingContext.BrowsingContextSchema,"origin":z.enum(["viewport","document",]).default("viewport").optional(),"format":BrowsingContext.ImageFormatSchema.optional(),"clip":BrowsingContext.ClipRectangleSchema.optional()}));
 }
 export namespace BrowsingContext {
 export const ImageFormatSchema = z.lazy(() => z.object({
@@ -275,13 +274,13 @@ export const HandleUserPromptParametersSchema = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"accept":z.boolean().optional(),"userText":z.string().optional()}));
 }
 export namespace BrowsingContext {
-export const LocateNodesParametersSchema = z.lazy(() => z.object({
-"context":BrowsingContext.BrowsingContextSchema,"locator":BrowsingContext.LocatorSchema,"maxNodeCount":JsUintSchema.gte(1).optional(),"ownership":Script.ResultOwnershipSchema.optional(),"sandbox":z.string().optional(),"serializationOptions":Script.SerializationOptionsSchema.optional(),"startNodes":z.array(Script.SharedReferenceSchema).min(1).optional()}));
-}
-export namespace BrowsingContext {
 export const 
 LocateNodesSchema = z.lazy(() => z.object({
 "method":z.literal("browsingContext.locateNodes"),"params":BrowsingContext.LocateNodesParametersSchema}));
+}
+export namespace BrowsingContext {
+export const LocateNodesParametersSchema = z.lazy(() => z.object({
+"context":BrowsingContext.BrowsingContextSchema,"locator":BrowsingContext.LocatorSchema,"maxNodeCount":JsUintSchema.gte(1).optional(),"ownership":Script.ResultOwnershipSchema.optional(),"sandbox":z.string().optional(),"serializationOptions":Script.SerializationOptionsSchema.optional(),"startNodes":z.array(Script.SharedReferenceSchema).min(1).optional()}));
 }
 export namespace BrowsingContext {
 export const LocateNodesResultSchema = z.lazy(() => z.object({
@@ -422,8 +421,9 @@ export const UserPromptOpenedParametersSchema = z.lazy(() => z.object({
 export const 
 NetworkCommandSchema = z.lazy(() => z.union([Network.AddInterceptSchema,Network.ContinueRequestSchema,Network.ContinueResponseSchema,Network.ContinueWithAuthSchema,Network.FailRequestSchema,Network.ProvideResponseSchema,Network.RemoveInterceptSchema]));
 export const 
+NetworkResultSchema = z.lazy(() => Network.AddInterceptResultSchema);
+export const 
 NetworkEventSchema = z.lazy(() => z.union([Network.AuthRequiredSchema,Network.BeforeRequestSentSchema,Network.FetchErrorSchema,Network.ResponseCompletedSchema,Network.ResponseStartedSchema]));
-export const NetworkResultSchema = z.lazy(() => Network.AddInterceptResultSchema);
 export namespace Network {
 export const AuthChallengeSchema = z.lazy(() => z.object({
 "scheme":z.string(),"realm":z.string()}));
@@ -502,13 +502,13 @@ export const UrlPatternStringSchema = z.lazy(() => z.object({
 "type":z.literal("string"),"pattern":z.string()}));
 }
 export namespace Network {
-export const AddInterceptParametersSchema = z.lazy(() => z.object({
-"phases":z.array(Network.InterceptPhaseSchema).min(1),"urlPatterns":z.array(Network.UrlPatternSchema).optional()}));
-}
-export namespace Network {
 export const 
 AddInterceptSchema = z.lazy(() => z.object({
 "method":z.literal("network.addIntercept"),"params":Network.AddInterceptParametersSchema}));
+}
+export namespace Network {
+export const AddInterceptParametersSchema = z.lazy(() => z.object({
+"phases":z.array(Network.InterceptPhaseSchema).min(1),"urlPatterns":z.array(Network.UrlPatternSchema).optional()}));
 }
 export namespace Network {
 export const InterceptPhaseSchema = z.lazy(() => z.enum(["beforeRequestSent","responseStarted","authRequired",]));
@@ -583,13 +583,21 @@ export namespace Network {
 export const RemoveInterceptParametersSchema = z.lazy(() => z.object({
 "intercept":Network.InterceptSchema}));
 }
+export namespace Network {
 export const 
-ScriptEventSchema = z.lazy(() => z.union([Script.MessageSchema,Script.RealmCreatedSchema,Script.RealmDestroyedSchema]));
+AuthRequiredSchema = z.lazy(() => z.object({
+"method":z.literal("network.authRequired"),"params":Network.AuthRequiredParametersSchema}));
+}
 export namespace Network {
 export const AuthRequiredParametersSchema = z.lazy(() => Network.BaseParametersSchema.and(
 z.object({
 "response":Network.ResponseDataSchema}))
 );
+}
+export namespace Network {
+export const 
+BeforeRequestSentSchema = z.lazy(() => z.object({
+"method":z.literal("network.beforeRequestSent"),"params":Network.BeforeRequestSentParametersSchema}));
 }
 export namespace Network {
 export const BeforeRequestSentParametersSchema = z.lazy(() => Network.BaseParametersSchema.and(
@@ -598,16 +606,31 @@ z.object({
 );
 }
 export namespace Network {
+export const 
+FetchErrorSchema = z.lazy(() => z.object({
+"method":z.literal("network.fetchError"),"params":Network.FetchErrorParametersSchema}));
+}
+export namespace Network {
 export const FetchErrorParametersSchema = z.lazy(() => Network.BaseParametersSchema.and(
 z.object({
 "errorText":z.string()}))
 );
 }
 export namespace Network {
+export const 
+ResponseCompletedSchema = z.lazy(() => z.object({
+"method":z.literal("network.responseCompleted"),"params":Network.ResponseCompletedParametersSchema}));
+}
+export namespace Network {
 export const ResponseCompletedParametersSchema = z.lazy(() => Network.BaseParametersSchema.and(
 z.object({
 "response":Network.ResponseDataSchema}))
 );
+}
+export namespace Network {
+export const 
+ResponseStartedSchema = z.lazy(() => z.object({
+"method":z.literal("network.responseStarted"),"params":Network.ResponseStartedParametersSchema}));
 }
 export namespace Network {
 export const ResponseStartedParametersSchema = z.lazy(() => Network.BaseParametersSchema.and(
@@ -618,41 +641,10 @@ z.object({
 export const 
 ScriptCommandSchema = z.lazy(() => z.union([Script.AddPreloadScriptSchema,Script.CallFunctionSchema,Script.DisownSchema,Script.EvaluateSchema,Script.GetRealmsSchema,Script.RemovePreloadScriptSchema]));
 export const ScriptResultSchema = z.lazy(() => z.union([Script.AddPreloadScriptResultSchema,Script.EvaluateResultSchema,Script.GetRealmsResultSchema]));
-export namespace Network {
 export const 
-AuthRequiredSchema = z.lazy(() => z.object({
-"method":z.literal("network.authRequired"),"params":Network.AuthRequiredParametersSchema}));
-}
-export namespace Network {
-export const 
-BeforeRequestSentSchema = z.lazy(() => z.object({
-"method":z.literal("network.beforeRequestSent"),"params":Network.BeforeRequestSentParametersSchema}));
-}
-export namespace Network {
-export const 
-FetchErrorSchema = z.lazy(() => z.object({
-"method":z.literal("network.fetchError"),"params":Network.FetchErrorParametersSchema}));
-}
-export namespace Network {
-export const 
-ResponseCompletedSchema = z.lazy(() => z.object({
-"method":z.literal("network.responseCompleted"),"params":Network.ResponseCompletedParametersSchema}));
-}
-export namespace Network {
-export const 
-ResponseStartedSchema = z.lazy(() => z.object({
-"method":z.literal("network.responseStarted"),"params":Network.ResponseStartedParametersSchema}));
-}
+ScriptEventSchema = z.lazy(() => z.union([Script.MessageSchema,Script.RealmCreatedSchema,Script.RealmDestroyedSchema]));
 export namespace Script {
 export const ChannelSchema = z.lazy(() => z.string());
-}
-export namespace Script {
-export const EvaluateResultSuccessSchema = z.lazy(() => z.object({
-"type":z.literal("success"),"result":Script.RemoteValueSchema,"realm":Script.RealmSchema}));
-}
-export namespace Script {
-export const ExceptionDetailsSchema = z.lazy(() => z.object({
-"columnNumber":JsUintSchema,"exception":Script.RemoteValueSchema,"lineNumber":JsUintSchema,"stackTrace":Script.StackTraceSchema,"text":z.string()}));
 }
 export namespace Script {
 export const ChannelValueSchema = z.lazy(() => z.object({
@@ -666,8 +658,16 @@ export namespace Script {
 export const EvaluateResultSchema = z.lazy(() => z.union([Script.EvaluateResultSuccessSchema,Script.EvaluateResultExceptionSchema]));
 }
 export namespace Script {
+export const EvaluateResultSuccessSchema = z.lazy(() => z.object({
+"type":z.literal("success"),"result":Script.RemoteValueSchema,"realm":Script.RealmSchema}));
+}
+export namespace Script {
 export const EvaluateResultExceptionSchema = z.lazy(() => z.object({
 "type":z.literal("exception"),"exceptionDetails":Script.ExceptionDetailsSchema,"realm":Script.RealmSchema}));
+}
+export namespace Script {
+export const ExceptionDetailsSchema = z.lazy(() => z.object({
+"columnNumber":JsUintSchema,"exception":Script.RemoteValueSchema,"lineNumber":JsUintSchema,"stackTrace":Script.StackTraceSchema,"text":z.string()}));
 }
 export namespace Script {
 export const HandleSchema = z.lazy(() => z.string());
@@ -676,10 +676,10 @@ export namespace Script {
 export const InternalIdSchema = z.lazy(() => z.string());
 }
 export namespace Script {
-export const ListLocalValueSchema = z.lazy(() => z.array(Script.LocalValueSchema));
+export const LocalValueSchema = z.lazy(() => z.union([Script.RemoteReferenceSchema,Script.PrimitiveProtocolValueSchema,Script.ChannelValueSchema,Script.ArrayLocalValueSchema,Script.DateLocalValueSchema,Script.MapLocalValueSchema,Script.ObjectLocalValueSchema,Script.RegExpLocalValueSchema,Script.SetLocalValueSchema]));
 }
 export namespace Script {
-export const LocalValueSchema = z.lazy(() => z.union([Script.RemoteReferenceSchema,Script.PrimitiveProtocolValueSchema,Script.ChannelValueSchema,Script.ArrayLocalValueSchema,Script.DateLocalValueSchema,Script.MapLocalValueSchema,Script.ObjectLocalValueSchema,Script.RegExpLocalValueSchema,Script.SetLocalValueSchema]));
+export const ListLocalValueSchema = z.lazy(() => z.array(Script.LocalValueSchema));
 }
 export namespace Script {
 export const ArrayLocalValueSchema = z.lazy(() => z.object({
@@ -809,16 +809,6 @@ export namespace Script {
 export const RealmTypeSchema = z.lazy(() => z.enum(["window","dedicated-worker","shared-worker","service-worker","worker","paint-worklet","audio-worklet","worklet",]));
 }
 export namespace Script {
-export const ListRemoteValueSchema = z.lazy(() => z.array(Script.RemoteValueSchema));
-}
-export namespace Script {
-export const MappingRemoteValueSchema = z.lazy(() => z.array(z.tuple([
-z.union([Script.RemoteValueSchema,z.string()]),Script.RemoteValueSchema])));
-}
-export namespace Script {
-export const RemoteValueSchema = z.lazy(() => z.union([Script.PrimitiveProtocolValueSchema,Script.SymbolRemoteValueSchema,Script.ArrayRemoteValueSchema,Script.ObjectRemoteValueSchema,Script.FunctionRemoteValueSchema,Script.RegExpRemoteValueSchema,Script.DateRemoteValueSchema,Script.MapRemoteValueSchema,Script.SetRemoteValueSchema,Script.WeakMapRemoteValueSchema,Script.WeakSetRemoteValueSchema,Script.IteratorRemoteValueSchema,Script.GeneratorRemoteValueSchema,Script.ErrorRemoteValueSchema,Script.ProxyRemoteValueSchema,Script.PromiseRemoteValueSchema,Script.TypedArrayRemoteValueSchema,Script.ArrayBufferRemoteValueSchema,Script.NodeListRemoteValueSchema,Script.HtmlCollectionRemoteValueSchema,Script.NodeRemoteValueSchema,Script.WindowProxyRemoteValueSchema]));
-}
-export namespace Script {
 export const RemoteReferenceSchema = z.lazy(() => z.union([Script.SharedReferenceSchema,Script.RemoteObjectReferenceSchema]));
 }
 export namespace Script {
@@ -832,6 +822,16 @@ export const RemoteObjectReferenceSchema = z.lazy(() => z.object({
 "handle":Script.HandleSchema,"sharedId":Script.SharedIdSchema.optional()}).and(
 ExtensibleSchema)
 );
+}
+export namespace Script {
+export const RemoteValueSchema = z.lazy(() => z.union([Script.PrimitiveProtocolValueSchema,Script.SymbolRemoteValueSchema,Script.ArrayRemoteValueSchema,Script.ObjectRemoteValueSchema,Script.FunctionRemoteValueSchema,Script.RegExpRemoteValueSchema,Script.DateRemoteValueSchema,Script.MapRemoteValueSchema,Script.SetRemoteValueSchema,Script.WeakMapRemoteValueSchema,Script.WeakSetRemoteValueSchema,Script.IteratorRemoteValueSchema,Script.GeneratorRemoteValueSchema,Script.ErrorRemoteValueSchema,Script.ProxyRemoteValueSchema,Script.PromiseRemoteValueSchema,Script.TypedArrayRemoteValueSchema,Script.ArrayBufferRemoteValueSchema,Script.NodeListRemoteValueSchema,Script.HtmlCollectionRemoteValueSchema,Script.NodeRemoteValueSchema,Script.WindowProxyRemoteValueSchema]));
+}
+export namespace Script {
+export const ListRemoteValueSchema = z.lazy(() => z.array(Script.RemoteValueSchema));
+}
+export namespace Script {
+export const MappingRemoteValueSchema = z.lazy(() => z.array(z.tuple([
+z.union([Script.RemoteValueSchema,z.string()]),Script.RemoteValueSchema])));
 }
 export namespace Script {
 export const SymbolRemoteValueSchema = z.lazy(() => z.object({
@@ -982,13 +982,13 @@ export const DisownParametersSchema = z.lazy(() => z.object({
 "handles":z.array(Script.HandleSchema),"target":Script.TargetSchema}));
 }
 export namespace Script {
-export const CallFunctionParametersSchema = z.lazy(() => z.object({
-"functionDeclaration":z.string(),"awaitPromise":z.boolean(),"target":Script.TargetSchema,"arguments":z.array(Script.LocalValueSchema).optional(),"resultOwnership":Script.ResultOwnershipSchema.optional(),"serializationOptions":Script.SerializationOptionsSchema.optional(),"this":Script.LocalValueSchema.optional(),"userActivation":z.boolean().default(false).optional()}));
-}
-export namespace Script {
 export const 
 CallFunctionSchema = z.lazy(() => z.object({
 "method":z.literal("script.callFunction"),"params":Script.CallFunctionParametersSchema}));
+}
+export namespace Script {
+export const CallFunctionParametersSchema = z.lazy(() => z.object({
+"functionDeclaration":z.string(),"awaitPromise":z.boolean(),"target":Script.TargetSchema,"arguments":z.array(Script.LocalValueSchema).optional(),"resultOwnership":Script.ResultOwnershipSchema.optional(),"serializationOptions":Script.SerializationOptionsSchema.optional(),"this":Script.LocalValueSchema.optional(),"userActivation":z.boolean().default(false).optional()}));
 }
 export namespace Script {
 export const 
@@ -1022,6 +1022,11 @@ export const RemovePreloadScriptParametersSchema = z.lazy(() => z.object({
 "script":Script.PreloadScriptSchema}));
 }
 export namespace Script {
+export const 
+MessageSchema = z.lazy(() => z.object({
+"method":z.literal("script.message"),"params":Script.MessageParametersSchema}));
+}
+export namespace Script {
 export const MessageParametersSchema = z.lazy(() => z.object({
 "channel":Script.ChannelSchema,"data":Script.RemoteValueSchema,"source":Script.SourceSchema}));
 }
@@ -1029,11 +1034,6 @@ export namespace Script {
 export const 
 RealmCreatedSchema = z.lazy(() => z.object({
 "method":z.literal("script.realmCreated"),"params":Script.RealmInfoSchema}));
-}
-export namespace Script {
-export const 
-MessageSchema = z.lazy(() => z.object({
-"method":z.literal("script.message"),"params":Script.MessageParametersSchema}));
 }
 export namespace Script {
 export const 
@@ -1087,34 +1087,34 @@ export const ElementOriginSchema = z.lazy(() => z.object({
 "type":z.literal("element"),"element":Script.SharedReferenceSchema}));
 }
 export namespace Input {
+export const 
+PerformActionsSchema = z.lazy(() => z.object({
+"method":z.literal("input.performActions"),"params":Input.PerformActionsParametersSchema}));
+}
+export namespace Input {
 export const PerformActionsParametersSchema = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"actions":z.array(Input.SourceActionsSchema)}));
+}
+export namespace Input {
+export const SourceActionsSchema = z.lazy(() => z.union([Input.NoneSourceActionsSchema,Input.KeySourceActionsSchema,Input.PointerSourceActionsSchema,Input.WheelSourceActionsSchema]));
 }
 export namespace Input {
 export const NoneSourceActionsSchema = z.lazy(() => z.object({
 "type":z.literal("none"),"id":z.string(),"actions":z.array(Input.NoneSourceActionSchema)}));
 }
 export namespace Input {
+export const NoneSourceActionSchema = z.lazy(() => Input.PauseActionSchema);
+}
+export namespace Input {
 export const KeySourceActionsSchema = z.lazy(() => z.object({
 "type":z.literal("key"),"id":z.string(),"actions":z.array(Input.KeySourceActionSchema)}));
 }
 export namespace Input {
+export const KeySourceActionSchema = z.lazy(() => z.union([Input.PauseActionSchema,Input.KeyDownActionSchema,Input.KeyUpActionSchema]));
+}
+export namespace Input {
 export const PointerSourceActionsSchema = z.lazy(() => z.object({
 "type":z.literal("pointer"),"id":z.string(),"parameters":Input.PointerParametersSchema.optional(),"actions":z.array(Input.PointerSourceActionSchema)}));
-}
-export namespace Input {
-export const 
-PerformActionsSchema = z.lazy(() => z.object({
-"method":z.literal("input.performActions"),"params":Input.PerformActionsParametersSchema}));
-}
-export namespace Input {
-export const SourceActionsSchema = z.lazy(() => z.union([Input.NoneSourceActionsSchema,Input.KeySourceActionsSchema,Input.PointerSourceActionsSchema,Input.WheelSourceActionsSchema]));
-}
-export namespace Input {
-export const NoneSourceActionSchema = z.lazy(() => Input.PauseActionSchema);
-}
-export namespace Input {
-export const KeySourceActionSchema = z.lazy(() => z.union([Input.PauseActionSchema,Input.KeyDownActionSchema,Input.KeyUpActionSchema]));
 }
 export namespace Input {
 export const PointerTypeSchema = z.lazy(() => z.enum(["mouse","pen","touch",]));
@@ -1124,11 +1124,11 @@ export const PointerParametersSchema = z.lazy(() => z.object({
 "pointerType":Input.PointerTypeSchema.default("mouse").optional()}));
 }
 export namespace Input {
-export const WheelSourceActionsSchema = z.lazy(() => z.object({
-"type":z.literal("wheel"),"id":z.string(),"actions":z.array(Input.WheelSourceActionSchema)}));
+export const PointerSourceActionSchema = z.lazy(() => z.union([Input.PauseActionSchema,Input.PointerDownActionSchema,Input.PointerUpActionSchema,Input.PointerMoveActionSchema]));
 }
 export namespace Input {
-export const PointerSourceActionSchema = z.lazy(() => z.union([Input.PauseActionSchema,Input.PointerDownActionSchema,Input.PointerUpActionSchema,Input.PointerMoveActionSchema]));
+export const WheelSourceActionsSchema = z.lazy(() => z.object({
+"type":z.literal("wheel"),"id":z.string(),"actions":z.array(Input.WheelSourceActionSchema)}));
 }
 export namespace Input {
 export const WheelSourceActionSchema = z.lazy(() => z.union([Input.PauseActionSchema,Input.WheelScrollActionSchema]));
@@ -1184,4 +1184,3 @@ export namespace Input {
 export const ReleaseActionsParametersSchema = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema}));
 }
-
