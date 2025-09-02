@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/google/cddlconv/compare/cddlconv-v0.1.6...cddlconv-v0.1.7) (2025-09-02)
+
+
+### Bug Fixes
+
+* update cddl to 0.10.1 ([ea5eaaa](https://github.com/google/cddlconv/commit/ea5eaaae821a1548d3e73b720263cbeacd7648ac))
+
 ## [0.1.6](https://github.com/google/cddlconv/compare/cddlconv-v0.1.5...cddlconv-v0.1.6) (2025-03-14)
 
 
