@@ -15,7 +15,7 @@ keywords = ["cddl", "converter", "parser"]
 vector_groups = []
 
 [dependencies]
-anyhow = "1.0.71"
+anyhow = "1.0.99"
 cddl = "=0.10.1"
 clap = { version = "4.5.47", features = ["derive"] }
 convert_case = "0.6.0"
