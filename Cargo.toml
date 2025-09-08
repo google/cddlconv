@@ -21,4 +21,4 @@ clap = { version = "4.5.47", features = ["derive"] }
 convert_case = "0.8.0"
 
 [dev-dependencies]
-insta = "1.43.1"
+insta = "1.43.2"
