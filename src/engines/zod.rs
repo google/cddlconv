@@ -433,7 +433,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             "true" => write!(self.stdout, "z.literal(true)"),
             "false" => write!(self.stdout, "z.literal(false)"),
             "undefined" => write!(self.stdout, "z.undefined()"),
-            "uri" => write!(self.stdout, "z.string().url()"),
+            "uri" => write!(self.stdout, "z.url()"),
             "regexp" => write!(self.stdout, "z.string()"),
             ident => write!(self.stdout, "{}Schema", to_namespaced(ident)),
         };
