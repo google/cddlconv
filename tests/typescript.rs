@@ -29,6 +29,19 @@ test!(
     it_works_with_amendments,
     "examples/rfc-examples/colors.cddl"
 );
-test!(it_works_with_optional_groups, "examples/optional_groups.cddl");
-test!(it_works_with_simple_optional_groups, "examples/simple_optional_groups.cddl");
-test!(it_works_with_array_occurences, "examples/array_occurences.cddl");
+test!(
+    it_works_with_prelude_text_types,
+    "examples/rfc-examples/prelude_text_types.cddl"
+);
+test!(
+    it_works_with_optional_groups,
+    "examples/optional_groups.cddl"
+);
+test!(
+    it_works_with_simple_optional_groups,
+    "examples/simple_optional_groups.cddl"
+);
+test!(
+    it_works_with_array_occurences,
+    "examples/array_occurences.cddl"
+);

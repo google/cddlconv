@@ -1,0 +1,6 @@
+---
+source: tests/typescript.rs
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export type Link = (({
+"href":(URL),"pattern":(RegExp)}));
