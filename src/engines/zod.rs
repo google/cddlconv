@@ -97,7 +97,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         );
         writeln!(self.stdout, "// @ts-nocheck Some types may be circular.");
         writeln!(self.stdout);
-        writeln!(self.stdout, "import z from 'zod';");
+        writeln!(self.stdout, "import * as z from 'zod';");
         writeln!(self.stdout);
     }
     pub fn print_postamble(&mut self) {
