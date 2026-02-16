@@ -1,0 +1,6 @@
+---
+source: tests/zod.rs
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export const LinkSchema = z.lazy(() => z.object({
+"href":z.url(),"pattern":z.string()}));

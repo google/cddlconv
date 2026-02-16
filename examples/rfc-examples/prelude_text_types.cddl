@@ -1,0 +1,6 @@
+; Test for CDDL standard prelude text types (RFC 8610)
+
+link = {
+  href: uri
+  pattern: regexp
+}
