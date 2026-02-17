@@ -26,4 +26,4 @@ cargo run -- path/to/file.cddl | prettier --stdin-filepath=$outfile > $outfile
 
 ## Limitations
 
-1.  Only [`TypeScript`](https://www.typescriptlang.org/) and [`Zod`](https://zod.dev/) is supported at the moment.
+1.  Only [`TypeScript`](https://www.typescriptlang.org/) and [`Zod v4`](https://zod.dev/) is supported at the moment.
