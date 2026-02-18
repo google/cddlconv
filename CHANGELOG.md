@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/google/cddlconv/compare/cddlconv-v0.1.7...cddlconv-v0.1.8) (2026-02-18)
+
+
+### Bug Fixes
+
+* upgrade generator to zod v4 ([#67](https://github.com/google/cddlconv/issues/67)) ([c80f1fb](https://github.com/google/cddlconv/commit/c80f1fb0b1437d0a4377eae3b39cf27621446554))
+
 ## [0.1.7](https://github.com/google/cddlconv/compare/cddlconv-v0.1.6...cddlconv-v0.1.7) (2025-09-02)
 
 
