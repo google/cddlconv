@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/google/cddlconv/compare/cddlconv-v0.1.8...cddlconv-v0.1.9) (2026-08-19)
+
+
+### Bug Fixes
+
+* literal map keys as quoted property ([#80](https://github.com/google/cddlconv/issues/80)) ([eb6e069](https://github.com/google/cddlconv/commit/eb6e0690d9a6447275e41349b2a5fface56e776b))
+
 ## [0.1.8](https://github.com/google/cddlconv/compare/cddlconv-v0.1.7...cddlconv-v0.1.8) (2026-02-18)
 
 
