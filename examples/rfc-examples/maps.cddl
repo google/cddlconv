@@ -17,3 +17,10 @@ extensible-map-example-4 = {
     ? "optional-key" ^ => int,
     * tstr => any
 }
+
+example-map = {
+    ? "hyphenated-key": text,
+    ? "another-key": text,
+    ? standardIdentifier: text,
+    ? 1: text,
+}

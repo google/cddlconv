@@ -276,16 +276,6 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         self.nested_type1.pop();
         Ok(())
     }
-    fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
-        match value {
-            cddl::token::Value::INT(value) => write!(self.stdout, "{}", value),
-            cddl::token::Value::UINT(value) => write!(self.stdout, "{}", value),
-            cddl::token::Value::FLOAT(value) => write!(self.stdout, "{}", value),
-            cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\"", value),
-            cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\"", value),
-        };
-        Ok(())
-    }
     fn visit_array(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         for (index, choice) in g.group_choices.iter().enumerate() {
             if index != 0 {
@@ -781,9 +771,13 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 write!(self.stdout, "\"{}\"", &ident);
             }
             cddl::ast::MemberKey::Value { value, .. } => {
-                write!(self.stdout, "[");
-                self.visit_value(value)?;
-                write!(self.stdout, "]");
+                match value {
+                    cddl::token::Value::INT(value) => write!(self.stdout, "\"{}\"", value),
+                    cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\"", value),
+                    cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\"", value),
+                    cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\"", value),
+                    cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\"", value),
+                };
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
                 unimplemented!()

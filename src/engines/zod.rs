@@ -651,9 +651,13 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             cddl::ast::MemberKey::Value { value, .. } => {
                 self.print_group_joiner();
                 self.enter_map();
-                write!(self.stdout, "[");
-                self.visit_value(value)?;
-                write!(self.stdout, "]:");
+                match value {
+                    cddl::token::Value::INT(value) => write!(self.stdout, "\"{}\":", value),
+                    cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\":", value),
+                    cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\":", value),
+                    cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\":", value),
+                    cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\":", value),
+                };
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
                 unimplemented!()

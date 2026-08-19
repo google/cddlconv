@@ -1,14 +1,14 @@
 ---
 source: tests/zod.rs
-expression: "String::from_utf8(stdout.into_inner().unwrap()).unwrap()"
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
 export const ExtensibleMapExampleSchema = z.lazy(() => z.object({
-[z.literal("optional-key")]:z.number().int().optional()}).and(
+"optional-key":z.number().int().optional()}).and(
 z.record(
 z.string(),z.any()))
 );
 export const ExtensibleMapExample2Schema = z.lazy(() => z.object({
-[z.literal("optional-key")]:z.number().int().optional()}).and(
+"optional-key":z.number().int().optional()}).and(
 z.record(
 z.string(),z.any()))
 );
@@ -22,4 +22,5 @@ z.literal("optional-key"),z.number().int().optional()).and(
 z.record(
 z.string(),z.any()))
 );
-
+export const ExampleMapSchema = z.lazy(() => z.object({
+"hyphenated-key":z.string().optional(),"another-key":z.string().optional(),"standardIdentifier":z.string().optional(),"1":z.string().optional()}));
