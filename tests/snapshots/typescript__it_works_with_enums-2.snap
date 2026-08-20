@@ -1,0 +1,19 @@
+---
+source: tests/typescript.rs
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export const QEnum = {QValue: "qValue",
+QValue2: "qValue2",
+} as const;
+export type QEnum = (typeof QEnum)[keyof typeof QEnum];
+export namespace Network {
+export const SameSite = {Strict: "strict",
+Lax: "lax",
+None: "none",
+} as const;
+export type SameSite = (typeof SameSite)[keyof typeof SameSite];
+}
+export namespace Network {
+export type Cookie = (({
+"name":(string),"value":(string),"sameSite":(Network.SameSite)}));
+}

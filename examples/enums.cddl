@@ -1,0 +1,10 @@
+; Test for enum types
+qEnum = "qValue" / "qValue2"
+
+network.SameSite = "strict" / "lax" / "none"
+
+network.Cookie = {
+    name: text,
+    value: text,
+    sameSite: network.SameSite,
+}
