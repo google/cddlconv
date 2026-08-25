@@ -28,25 +28,26 @@ export type JsInt = (number);
  * Must be between `0` and `9007199254740991`, inclusive.
  */
 export type JsUint = (number);
-export const enum ErrorCode {InvalidArgument = "invalid argument",
-InvalidSessionId = "invalid session id",
-MoveTargetOutOfBounds = "move target out of bounds",
-NoSuchAlert = "no such alert",
-NoSuchElement = "no such element",
-NoSuchFrame = "no such frame",
-NoSuchHandle = "no such handle",
-NoSuchHistoryEntry = "no such history entry",
-NoSuchIntercept = "no such intercept",
-NoSuchNode = "no such node",
-NoSuchRequest = "no such request",
-NoSuchScript = "no such script",
-SessionNotCreated = "session not created",
-UnableToCaptureScreen = "unable to capture screen",
-UnableToCloseBrowser = "unable to close browser",
-UnknownCommand = "unknown command",
-UnknownError = "unknown error",
-UnsupportedOperation = "unsupported operation",
-}
+export const ErrorCode = {InvalidArgument: "invalid argument",
+InvalidSessionId: "invalid session id",
+MoveTargetOutOfBounds: "move target out of bounds",
+NoSuchAlert: "no such alert",
+NoSuchElement: "no such element",
+NoSuchFrame: "no such frame",
+NoSuchHandle: "no such handle",
+NoSuchHistoryEntry: "no such history entry",
+NoSuchIntercept: "no such intercept",
+NoSuchNode: "no such node",
+NoSuchRequest: "no such request",
+NoSuchScript: "no such script",
+SessionNotCreated: "session not created",
+UnableToCaptureScreen: "unable to capture screen",
+UnableToCloseBrowser: "unable to close browser",
+UnknownCommand: "unknown command",
+UnknownError: "unknown error",
+UnsupportedOperation: "unsupported operation",
+} as const;
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 export type SessionCommand = (Session.End| Session.New| Session.Status| Session.Subscribe| Session.Unsubscribe);
 export type SessionResult = ((Session.NewResult| Session.StatusResult));
 export namespace Session {
@@ -173,10 +174,11 @@ export type NavigationInfo = (({
 "context":(BrowsingContext.BrowsingContext),"navigation":(BrowsingContext.Navigation| null),"timestamp":(JsUint),"url":(string)}));
 }
 export namespace BrowsingContext {
-export const enum ReadinessState {None = "none",
-Interactive = "interactive",
-Complete = "complete",
-}
+export const ReadinessState = {None: "none",
+Interactive: "interactive",
+Complete: "complete",
+} as const;
+export type ReadinessState = (typeof ReadinessState)[keyof typeof ReadinessState];
 }
 export namespace BrowsingContext {
 export type Activate = ({
@@ -238,9 +240,10 @@ export type Create = ({
 "method":("browsingContext.create"),"params":(BrowsingContext.CreateParameters)});
 }
 export namespace BrowsingContext {
-export const enum CreateType {Tab = "tab",
-Window = "window",
-}
+export const CreateType = {Tab: "tab",
+Window: "window",
+} as const;
+export type CreateType = (typeof CreateType)[keyof typeof CreateType];
 }
 export namespace BrowsingContext {
 export type CreateParameters = (({
@@ -561,10 +564,11 @@ export type AddInterceptParameters = (({
 ...((Network.UrlPattern)[])])}));
 }
 export namespace Network {
-export const enum InterceptPhase {BeforeRequestSent = "beforeRequestSent",
-ResponseStarted = "responseStarted",
-AuthRequired = "authRequired",
-}
+export const InterceptPhase = {BeforeRequestSent: "beforeRequestSent",
+ResponseStarted: "responseStarted",
+AuthRequired: "authRequired",
+} as const;
+export type InterceptPhase = (typeof InterceptPhase)[keyof typeof InterceptPhase];
 }
 export namespace Network {
 export type AddInterceptResult = (({
@@ -823,7 +827,16 @@ export type WorkletRealmInfo = ((Script.BaseRealmInfo&{
 "type":("worklet")}));
 }
 export namespace Script {
-export type RealmType = ("window"| "dedicated-worker"| "shared-worker"| "service-worker"| "worker"| "paint-worklet"| "audio-worklet"| "worklet");
+export const RealmType = {Window: "window",
+DedicatedWorker: "dedicated-worker",
+SharedWorker: "shared-worker",
+ServiceWorker: "service-worker",
+Worker: "worker",
+PaintWorklet: "paint-worklet",
+AudioWorklet: "audio-worklet",
+Worklet: "worklet",
+} as const;
+export type RealmType = (typeof RealmType)[keyof typeof RealmType];
 }
 export namespace Script {
 export type RemoteReference = ((Script.SharedReference| Script.RemoteObjectReference));
@@ -945,9 +958,10 @@ export type WindowProxyProperties = (({
 "context":(BrowsingContext.BrowsingContext)}));
 }
 export namespace Script {
-export const enum ResultOwnership {Root = "root",
-None = "none",
-}
+export const ResultOwnership = {Root: "root",
+None: "none",
+} as const;
+export type ResultOwnership = (typeof ResultOwnership)[keyof typeof ResultOwnership];
 }
 export namespace Script {
 export type SerializationOptions = (({
@@ -1083,11 +1097,12 @@ export type RealmDestroyedParameters = (({
 }
 export type LogEvent = (Log.EntryAdded);
 export namespace Log {
-export const enum Level {Debug = "debug",
-Info = "info",
-Warn = "warn",
-Error = "error",
-}
+export const Level = {Debug: "debug",
+Info: "info",
+Warn: "warn",
+Error: "error",
+} as const;
+export type Level = (typeof Level)[keyof typeof Level];
 }
 export namespace Log {
 export type Entry = ((Log.GenericLogEntry| Log.ConsoleLogEntry| Log.JavascriptLogEntry));
@@ -1152,10 +1167,11 @@ export type PointerSourceActions = (({
 ...((Input.PointerSourceAction)[])])}));
 }
 export namespace Input {
-export const enum PointerType {Mouse = "mouse",
-Pen = "pen",
-Touch = "touch",
-}
+export const PointerType = {Mouse: "mouse",
+Pen: "pen",
+Touch: "touch",
+} as const;
+export type PointerType = (typeof PointerType)[keyof typeof PointerType];
 }
 export namespace Input {
 export type PointerParameters = (({

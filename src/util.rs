@@ -46,3 +46,33 @@ pub fn is_alphaspace<T: AsRef<str>>(value: T) -> bool {
         .bytes()
         .all(|ch| b'a' <= ch && ch <= b'z' || ch == b' ')
 }
+
+pub fn is_enum_value<T: AsRef<str>>(value: T) -> bool {
+    let val = value.as_ref();
+    let pascal = to_pascalcase(val);
+    if pascal.is_empty() {
+        return false;
+    }
+    let mut chars = pascal.chars();
+    let first = chars.next().unwrap();
+    (first.is_ascii_alphabetic() || first == '_')
+        && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_enum_value() {
+        assert!(is_enum_value("invalid argument"));
+        assert!(is_enum_value("qValue"));
+        assert!(is_enum_value("qValue2"));
+        assert!(is_enum_value("user-agent"));
+        assert!(is_enum_value("strict"));
+        assert!(is_enum_value("none"));
+        assert!(!is_enum_value("2g"));
+        assert!(!is_enum_value(""));
+        assert!(!is_enum_value("foo.bar"));
+    }
+}

@@ -18,7 +18,7 @@ use std::io::Write;
 
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
-use crate::util::{is_alphaspace, split_namespaced, to_namespaced, to_pascalcase};
+use crate::util::{is_enum_value, split_namespaced, to_namespaced, to_pascalcase};
 
 const MAX_ELEMENTS: usize = 1 << 3;
 
@@ -137,7 +137,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 "export type Flatten<T extends unknown[]> = T extends (infer S)[][] \
                     ? S[] \
                     : never;"
-            )
+            );
         }
     }
     /// Requires all type choices to be strings.
@@ -146,7 +146,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             if let cddl::ast::Type2::TextValue { value, .. } = &choice.type1.type2 {
                 writeln!(
                     self.stdout,
-                    "{} = \"{}\",",
+                    "{}: \"{}\",",
                     to_pascalcase(value),
                     value.to_string()
                 );
@@ -549,16 +549,33 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         for namespace in &namespaces {
             writeln!(self.stdout, "export namespace {} {{", namespace);
         }
-        if tr.value.type_choices.iter().all(|choice| {
-            if let cddl::ast::Type2::TextValue { value, .. } = &choice.type1.type2 {
-                is_alphaspace(value)
-            } else {
-                false
-            }
-        }) {
-            write!(self.stdout, "export const enum {} {{", type_name);
+        if tr.value.type_choices.len() > 1
+            && tr.value.type_choices.iter().all(|choice| {
+                if let cddl::ast::Type2::TextValue { value, .. } = &choice.type1.type2 {
+                    is_enum_value(value)
+                } else {
+                    false
+                }
+            })
+        {
+            self.visit_type_for_comment(&tr.value)?;
+            write!(self.stdout, "export const {} = {{", type_name);
             self.visit_enum_type(&tr.value)?;
-            writeln!(self.stdout, "}}");
+            writeln!(self.stdout, "}} as const;");
+            write!(self.stdout, "export type ");
+            self.visit_identifier_with_params(
+                &cddl::ast::Identifier {
+                    ident: &type_name,
+                    socket: None,
+                    span: Default::default(),
+                },
+                &tr.generic_params,
+            )?;
+            writeln!(
+                self.stdout,
+                " = (typeof {})[keyof typeof {}];",
+                type_name, type_name
+            );
         } else {
             self.visit_type_for_comment(&tr.value)?;
             write!(self.stdout, "export type ");
