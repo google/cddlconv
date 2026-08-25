@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/google/cddlconv/compare/cddlconv-v0.1.9...cddlconv-v0.1.10) (2026-08-25)
+
+
+### Bug Fixes
+
+* generate const object and type alias for string enums ([#87](https://github.com/google/cddlconv/issues/87)) ([3a47be9](https://github.com/google/cddlconv/commit/3a47be9840f5aa4aea69119ac5d675fb34a0beb5))
+
 ## [0.1.9](https://github.com/google/cddlconv/compare/cddlconv-v0.1.8...cddlconv-v0.1.9) (2026-08-19)
 
 
