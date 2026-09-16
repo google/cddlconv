@@ -361,6 +361,10 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         self.enter_array();
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                // When an array contains an unwrapped type (e.g. `[~TupleType, bool]`),
+                // the parser produces a `ValueMemberKeyEntry` with `member_key: None` and
+                // an `entry_type` of `Type2::Unwrap`. We spread its tuple elements (`...TupleType`)
+                // into the enclosing array rather than emitting it as a nested single element.
                 if ge.member_key.is_none() {
                     if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
                         self.visit_unwrap_array_entry(&ge.occur, ident, generic_args)?;
@@ -379,6 +383,13 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         Ok(())
     }
 
+    /// Emits an unwrapped array type (`~ident`) inside an array tuple.
+    ///
+    /// Unlike `visit_type_arrayname_entry` (which handles group rules like `Group = (...)` that
+    /// generate a separate `GroupVector` type under `--features vector_groups`), the unwrap operator `~`
+    /// only targets type rules (`Type = [...]`). Since type rules are already generated directly as
+    /// tuple/array types (`export type Type = [...]`) and never have a `*Vector` companion type,
+    /// we always reference `ident` directly without appending `"Vector"`.
     fn visit_unwrap_array_entry(
         &mut self,
         occur: &Option<cddl::ast::Occurrence>,
@@ -719,6 +730,17 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     ) -> cddl::visitor::Result<Error> {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                // When a map or group includes an unwrapped type (e.g. `{~browsingContext.Info, hasPlannedNavigation: bool}`),
+                // `cddl` parses `~browsingContext.Info` as a `ValueMemberKeyEntry` with `member_key: None`
+                // and `entry_type` set to `Type2::Unwrap`.
+                //
+                // In TypeScript, map type rules (`export type Info = { ... }`) are already object types.
+                // To include all fields of `Info` in the surrounding object type, we treat it identically
+                // to a `TypeGroupname` inclusion:
+                // 1. Close any currently open `{ ... }` object literal (`self.exit_map()`).
+                // 2. Print `&` if there were preceding entries (`self.print_group_joiner()`).
+                // 3. Emit `Info` (or `({} | Info)` if marked optional with `? ~Info`).
+                // Any subsequent key-value entries will then emit `& { ... }`.
                 if ge.member_key.is_none() {
                     if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
                         self.exit_map();
@@ -897,6 +919,9 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     }
     fn visit_type2(&mut self, t2: &'b cddl::ast::Type2<'a>) -> cddl::visitor::Result<Error> {
         match t2 {
+            // Handle both `Typename` and `Unwrap` (`~Typename<Args>`) here so that
+            // generic arguments are formatted as `Ident<Args>`. The default `walk_type2`
+            // visitor visits `generic_args` before `ident` without angle brackets.
             cddl::ast::Type2::Typename {
                 ident,
                 generic_args,

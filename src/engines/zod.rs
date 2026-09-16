@@ -259,6 +259,8 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     ) -> cddl::visitor::Result<Error> {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                // Handle unwrapped array types (`[~TupleType]`) the same way as array group inclusions
+                // (`TypeGroupname`), emitting the referenced schema directly (e.g. `TupleTypeSchema`).
                 if ge.member_key.is_none() {
                     if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
                         if self.in_tuple() {
@@ -564,6 +566,13 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     ) -> cddl::visitor::Result<Error> {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                // When a map or group includes an unwrapped type (e.g. `{~browsingContext.Info, hasPlannedNavigation: bool}`),
+                // `cddl` parses `~browsingContext.Info` as a `ValueMemberKeyEntry` with `member_key: None`
+                // and `entry_type` set to `Type2::Unwrap`.
+                //
+                // Just like a `TypeGroupname` inclusion, we close any currently open `z.object({ ... })`
+                // (`self.exit_map()`), chain `.and(...)` (`self.print_group_joiner()`), and emit
+                // `InfoSchema` (or `InfoSchema.or(z.object({}))` if optional `? ~Info`).
                 if ge.member_key.is_none() {
                     if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
                         self.exit_map();
@@ -780,6 +789,8 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     }
     fn visit_type2(&mut self, t2: &'b cddl::ast::Type2<'a>) -> cddl::visitor::Result<Error> {
         match t2 {
+            // Handle both `Typename` and `Unwrap` (`~Typename<Args>`) here so that
+            // generic arguments are handled properly.
             cddl::ast::Type2::Typename {
                 ident,
                 generic_args,
