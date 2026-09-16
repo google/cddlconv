@@ -420,7 +420,11 @@ export type TraverseHistoryResult = ((Record<string, never>
 }
 export namespace BrowsingContext {
 export type ContextCreated = ({
-"method":("browsingContext.contextCreated"),"params":(BrowsingContext.Info)});
+"method":("browsingContext.contextCreated"),"params":(BrowsingContext.ContextCreatedParameters)});
+}
+export namespace BrowsingContext {
+export type ContextCreatedParameters = ((BrowsingContext.Info&{
+"hasPlannedNavigation":(boolean)}));
 }
 export namespace BrowsingContext {
 export type ContextDestroyed = ({

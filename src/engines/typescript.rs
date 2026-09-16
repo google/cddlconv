@@ -18,7 +18,10 @@ use std::io::Write;
 
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
-use crate::util::{is_enum_value, split_namespaced, to_namespaced, to_pascalcase};
+use crate::util::{
+    filter_group_entries, is_enum_value, split_namespaced, to_namespaced, to_pascalcase,
+    unwrap_entry,
+};
 
 const MAX_ELEMENTS: usize = 1 << 3;
 
@@ -293,10 +296,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             in_object: false,
             is_first: true,
         });
-        if gc.group_entries.is_empty() {
+        let entries = filter_group_entries(&gc.group_entries);
+        if entries.is_empty() {
             self.enter_array();
         }
-        for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
+        for (index, entry) in entries.into_iter().enumerate() {
             self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
             self.visit_array_entry(entry)?;
         }
@@ -357,6 +361,12 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         self.enter_array();
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                if ge.member_key.is_none() {
+                    if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
+                        self.visit_unwrap_array_entry(&ge.occur, ident, generic_args)?;
+                        return Ok(());
+                    }
+                }
                 self.visit_value_array_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
@@ -366,6 +376,39 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 self.visit_inline_array_entry(&occur, group)?;
             }
         }
+        Ok(())
+    }
+
+    fn visit_unwrap_array_entry(
+        &mut self,
+        occur: &Option<cddl::ast::Occurrence>,
+        ident: &cddl::ast::Identifier<'a>,
+        generic_args: &Option<cddl::ast::GenericArgs<'a>>,
+    ) -> cddl::visitor::Result<Error> {
+        visit_array_element_impl!(
+            self,
+            occur,
+            {
+                write!(self.stdout, "...");
+                self.visit_identifier_with_args(ident, generic_args)?;
+            },
+            {
+                #[cfg(not(feature = "vector_groups"))]
+                {
+                    self.visit_identifier_with_args(ident, generic_args)?;
+                    write!(self.stdout, "[number]");
+                    write!(self.stdout, "[]");
+                }
+                #[cfg(feature = "vector_groups")]
+                {
+                    self.postamble_options.print_flatten = true;
+                    write!(self.stdout, "Flatten<");
+                    self.visit_identifier_with_args(ident, generic_args)?;
+                    write!(self.stdout, "[]");
+                    write!(self.stdout, ">");
+                }
+            }
+        );
         Ok(())
     }
 
@@ -676,6 +719,20 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     ) -> cddl::visitor::Result<Error> {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                if ge.member_key.is_none() {
+                    if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
+                        self.exit_map();
+                        self.print_group_joiner();
+                        if matches!(calculate_occurrence(&ge.occur), (0, max) if max > 0) {
+                            write!(self.stdout, "({{}} |");
+                            self.visit_identifier_with_args(ident, generic_args)?;
+                            write!(self.stdout, ")");
+                        } else {
+                            self.visit_identifier_with_args(ident, generic_args)?;
+                        }
+                        return Ok(());
+                    }
+                }
                 self.visit_value_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
@@ -749,7 +806,8 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         &mut self,
         gc: &'b cddl::ast::GroupChoice<'a>,
     ) -> cddl::visitor::Result<Error> {
-        match gc.group_entries.is_empty() {
+        let entries = filter_group_entries(&gc.group_entries);
+        match entries.is_empty() {
             true => {
                 writeln!(self.stdout, "Record<string, never>");
                 Ok(())
@@ -759,7 +817,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                     in_object: false,
                     is_first: true,
                 });
-                for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
+                for (index, entry) in entries.into_iter().enumerate() {
                     self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
                     self.visit_group_entry(entry)?;
                 }
@@ -843,8 +901,13 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 ident,
                 generic_args,
                 ..
+            }
+            | cddl::ast::Type2::Unwrap {
+                ident,
+                generic_args,
+                ..
             } => {
-                self.visit_identifier_with_args(&ident, &generic_args)?;
+                self.visit_identifier_with_args(ident, generic_args)?;
             }
             cddl::ast::Type2::Array { group, .. } => {
                 self.visit_array(&group)?;

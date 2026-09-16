@@ -1,0 +1,32 @@
+---
+source: tests/zod.rs
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export namespace BrowsingContext {
+export const InfoSchema = z.lazy(() => z.object({
+"context":z.string(),"url":z.string()}));
+}
+export namespace BrowsingContext {
+export const ContextCreatedParametersSchema = z.lazy(() => BrowsingContext.InfoSchema.and(
+z.object({
+"hasPlannedNavigation":z.boolean()}))
+);
+}
+export const OptionalUnwrapSchema = z.lazy(() => BrowsingContext.InfoSchema.or(z.object({})).and(
+z.object({
+"extra":z.number().int()}))
+);
+export const TrailingUnwrapSchema = z.lazy(() => z.object({
+"extra":z.number().int()}).and(
+BrowsingContext.InfoSchema)
+);
+export const DirectUnwrapSchema = z.lazy(() => BrowsingContext.InfoSchema);
+export const TupleTypeSchema = z.lazy(() => z.tuple([
+z.number().int(),z.string()]));
+export const UnwrappedTupleSchema = z.lazy(() => TupleTypeSchema);
+export const GenericMapSchema = z.lazy(() => z.object({
+"val":TSchema}));
+export const UnwrappedGenericSchema = z.lazy(() => GenericMapSchema.and(
+z.object({
+"extra":z.boolean()}))
+);

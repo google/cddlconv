@@ -545,8 +545,13 @@ browsingContext.TraverseHistoryResult = {
 
 browsingContext.ContextCreated = (
  method: "browsingContext.contextCreated",
- params: browsingContext.Info
+ params: browsingContext.ContextCreatedParameters
 )
+
+browsingContext.ContextCreatedParameters = {
+  ~browsingContext.Info,
+  hasPlannedNavigation: bool,
+}
 
 browsingContext.ContextDestroyed = (
  method: "browsingContext.contextDestroyed",

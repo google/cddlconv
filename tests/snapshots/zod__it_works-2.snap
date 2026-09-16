@@ -358,7 +358,13 @@ export const TraverseHistoryResultSchema = z.lazy(() => z.object({
 export namespace BrowsingContext {
 export const 
 ContextCreatedSchema = z.lazy(() => z.object({
-"method":z.literal("browsingContext.contextCreated"),"params":BrowsingContext.InfoSchema}));
+"method":z.literal("browsingContext.contextCreated"),"params":BrowsingContext.ContextCreatedParametersSchema}));
+}
+export namespace BrowsingContext {
+export const ContextCreatedParametersSchema = z.lazy(() => BrowsingContext.InfoSchema.and(
+z.object({
+"hasPlannedNavigation":z.boolean()}))
+);
 }
 export namespace BrowsingContext {
 export const 

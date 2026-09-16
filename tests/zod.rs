@@ -45,3 +45,4 @@ test!(
     "examples/array_occurences.cddl"
 );
 test!(it_works_with_enums, "examples/enums.cddl");
+test!(it_works_with_unwrap, "examples/unwrap.cddl");

@@ -18,7 +18,7 @@ use std::io::Write;
 
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
-use crate::util::{split_namespaced, to_namespaced};
+use crate::util::{filter_group_entries, split_namespaced, to_namespaced, unwrap_entry};
 
 const MAX_ARRAYS: usize = 1 << 3;
 
@@ -151,10 +151,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             in_record: false,
             in_and: false,
         });
-        if gc.group_entries.is_empty() {
+        let entries = filter_group_entries(&gc.group_entries);
+        if entries.is_empty() {
             self.enter_tuple();
         }
-        for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
+        for (index, entry) in entries.into_iter().enumerate() {
             self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
             self.visit_array_entry(entry)?;
         }
@@ -258,6 +259,24 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     ) -> cddl::visitor::Result<Error> {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                if ge.member_key.is_none() {
+                    if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
+                        if self.in_tuple() {
+                            return Err(Error::CDDL(
+                                "Zod cannot mix array members and array groups. Use one or the other"
+                                    .to_string(),
+                            ));
+                        }
+                        let (lower, upper) = calculate_occurrence(&ge.occur);
+                        if lower != upper || lower != 1 {
+                            return Err(Error::CDDL(
+                                "Multiplicity for array types is not supported.".to_string(),
+                            ));
+                        }
+                        self.visit_identifier_with_args(ident, generic_args)?;
+                        return Ok(());
+                    }
+                }
                 self.visit_value_array_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
@@ -545,6 +564,19 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     ) -> cddl::visitor::Result<Error> {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                if ge.member_key.is_none() {
+                    if let Some((ident, generic_args)) = unwrap_entry(&ge.entry_type) {
+                        self.exit_map();
+                        self.print_group_joiner();
+                        if matches!(calculate_occurrence(&ge.occur), (0, max) if max > 0) {
+                            self.visit_identifier_with_args(ident, generic_args)?;
+                            write!(self.stdout, ".or(z.object({{}}))");
+                        } else {
+                            self.visit_identifier_with_args(ident, generic_args)?;
+                        }
+                        return Ok(());
+                    }
+                }
                 self.visit_value_member_key_entry(ge)?;
             }
             cddl::ast::GroupEntry::TypeGroupname { ge, .. } => {
@@ -622,10 +654,11 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             in_record: false,
             in_and: false,
         });
-        if gc.group_entries.is_empty() {
+        let entries = filter_group_entries(&gc.group_entries);
+        if entries.is_empty() {
             self.enter_map();
         }
-        for (index, (entry, _)) in gc.group_entries.iter().enumerate() {
+        for (index, entry) in entries.into_iter().enumerate() {
             self.nested_group_choices.last_mut().unwrap().is_first = index == 0;
             self.visit_group_entry(entry)?;
         }
@@ -751,8 +784,13 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 ident,
                 generic_args,
                 ..
+            }
+            | cddl::ast::Type2::Unwrap {
+                ident,
+                generic_args,
+                ..
             } => {
-                self.visit_identifier_with_args(&ident, &generic_args)?;
+                self.visit_identifier_with_args(ident, generic_args)?;
             }
             cddl::ast::Type2::Array { group, .. } => {
                 self.visit_array(&group)?;

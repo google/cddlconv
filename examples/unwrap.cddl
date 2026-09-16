@@ -1,0 +1,34 @@
+browsingContext.Info = {
+  context: text,
+  url: text,
+}
+
+browsingContext.ContextCreatedParameters = {
+  ~browsingContext.Info,
+  hasPlannedNavigation: bool,
+}
+
+OptionalUnwrap = {
+  ? ~browsingContext.Info,
+  extra: int,
+}
+
+TrailingUnwrap = {
+  extra: int,
+  ~browsingContext.Info,
+}
+
+DirectUnwrap = ~browsingContext.Info
+
+TupleType = [int, text]
+
+UnwrappedTuple = [~TupleType]
+
+GenericMap<T> = {
+  val: T,
+}
+
+UnwrappedGeneric<T> = {
+  ~GenericMap<T>,
+  extra: bool,
+}

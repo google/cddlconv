@@ -1,0 +1,25 @@
+---
+source: tests/typescript.rs
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export namespace BrowsingContext {
+export type Info = (({
+"context":(string),"url":(string)}));
+}
+export namespace BrowsingContext {
+export type ContextCreatedParameters = ((BrowsingContext.Info&{
+"hasPlannedNavigation":(boolean)}));
+}
+export type OptionalUnwrap = ((({} |BrowsingContext.Info)&{
+"extra":(number)}));
+export type TrailingUnwrap = (({
+"extra":(number)}&BrowsingContext.Info));
+export type DirectUnwrap = (BrowsingContext.Info);
+export type TupleType = ([
+(number),(string)]);
+export type UnwrappedTuple = ([
+...TupleType]);
+export type GenericMap<T,> = (({
+"val":(T)}));
+export type UnwrappedGeneric<T,> = ((GenericMap<T,>&{
+"extra":(boolean)}));
