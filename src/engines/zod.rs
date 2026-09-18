@@ -53,6 +53,8 @@ where
 {
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
+    is_type_mode: bool,
+    cyclic_rules: std::collections::HashSet<String>,
     #[allow(dead_code)]
     postamble_options: PostambleOptions,
     stdout: Stdout,
@@ -79,6 +81,8 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         Engine {
             nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
+            is_type_mode: false,
+            cyclic_rules: std::collections::HashSet::new(),
             postamble_options: PostambleOptions {
                 #[cfg(feature = "vector_groups")]
                 print_flatten: false,
@@ -91,12 +95,6 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         (self.stdout, self.stderr)
     }
     pub fn print_preamble(&mut self) {
-        writeln!(
-            self.stdout,
-            "// eslint-disable-next-line @typescript-eslint/ban-ts-comment"
-        );
-        writeln!(self.stdout, "// @ts-nocheck Some types may be circular.");
-        writeln!(self.stdout);
         writeln!(self.stdout, "import * as z from 'zod';");
         writeln!(self.stdout);
     }
@@ -114,13 +112,23 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 .map(|choice| &choice.type1.type2)
                 .all(|type2| matches!(type2, cddl::ast::Type2::TextValue { .. }))
         {
-            write!(self.stdout, "z.enum([");
-            for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
-                if let cddl::ast::Type2::TextValue { value, .. } = type2 {
-                    write!(self.stdout, "\"{}\",", value);
+            if self.is_type_mode {
+                write!(self.stdout, "z.ZodEnum<{{");
+                for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
+                    if let cddl::ast::Type2::TextValue { value, .. } = type2 {
+                        write!(self.stdout, "\"{}\":\"{}\",", value, value);
+                    }
                 }
+                write!(self.stdout, "}}>");
+            } else {
+                write!(self.stdout, "z.enum([");
+                for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
+                    if let cddl::ast::Type2::TextValue { value, .. } = type2 {
+                        write!(self.stdout, "\"{}\",", value);
+                    }
+                }
+                write!(self.stdout, "])");
             }
-            write!(self.stdout, "])");
             true
         } else {
             false
@@ -128,7 +136,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     }
     fn visit_array(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         if g.group_choices.len() != 1 {
-            write!(self.stdout, "z.union([");
+            if self.is_type_mode {
+                write!(self.stdout, "z.ZodUnion<readonly [");
+            } else {
+                write!(self.stdout, "z.union([");
+            }
         }
         for (index, choice) in g.group_choices.iter().enumerate() {
             if index != 0 {
@@ -137,7 +149,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             self.visit_array_choice(choice)?;
         }
         if g.group_choices.len() != 1 {
-            write!(self.stdout, "])");
+            if self.is_type_mode {
+                write!(self.stdout, "]>");
+            } else {
+                write!(self.stdout, "])");
+            }
         }
         Ok(())
     }
@@ -172,7 +188,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     fn enter_tuple(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_object {
-                writeln!(self.stdout, "z.tuple([");
+                if self.is_type_mode {
+                    writeln!(self.stdout, "z.ZodTuple<[");
+                } else {
+                    writeln!(self.stdout, "z.tuple([");
+                }
                 group.in_object = true;
             }
         }
@@ -181,7 +201,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
-                write!(self.stdout, "])");
+                if self.is_type_mode {
+                    write!(self.stdout, "], null>");
+                } else {
+                    write!(self.stdout, "])");
+                }
             }
         }
     }
@@ -194,7 +218,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             } else {
                 if group.in_and {
                     group.in_and = false;
-                    writeln!(self.stdout, ")");
+                    if self.is_type_mode {
+                        write!(self.stdout, ">");
+                    } else {
+                        writeln!(self.stdout, ")");
+                    }
                 }
                 if !group.is_first {
                     self.enter_and();
@@ -205,7 +233,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     fn enter_and(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_and {
-                writeln!(self.stdout, ".and(");
+                if self.is_type_mode {
+                    write!(self.stdout, ",");
+                } else {
+                    writeln!(self.stdout, ".and(");
+                }
                 group.in_and = true;
             }
         }
@@ -214,14 +246,22 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_and {
                 group.in_and = false;
-                writeln!(self.stdout, ")");
+                if self.is_type_mode {
+                    write!(self.stdout, ">");
+                } else {
+                    writeln!(self.stdout, ")");
+                }
             }
         }
     }
     fn enter_map(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_object {
-                writeln!(self.stdout, "z.object({{");
+                if self.is_type_mode {
+                    writeln!(self.stdout, "z.ZodObject<{{");
+                } else {
+                    writeln!(self.stdout, "z.object({{");
+                }
                 group.in_object = true;
             }
         }
@@ -230,7 +270,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_object {
                 group.in_object = false;
-                write!(self.stdout, "}})");
+                if self.is_type_mode {
+                    write!(self.stdout, "}}>");
+                } else {
+                    write!(self.stdout, "}})");
+                }
             }
         }
         self.exit_and();
@@ -238,7 +282,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     fn enter_record(&mut self) {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if !group.in_record {
-                writeln!(self.stdout, "z.record(");
+                if self.is_type_mode {
+                    writeln!(self.stdout, "z.ZodRecord<");
+                } else {
+                    writeln!(self.stdout, "z.record(");
+                }
                 group.in_record = true;
             }
         }
@@ -247,7 +295,11 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         if let Some(group) = self.nested_group_choices.last_mut() {
             if group.in_record {
                 group.in_record = false;
-                write!(self.stdout, ")");
+                if self.is_type_mode {
+                    write!(self.stdout, ">");
+                } else {
+                    write!(self.stdout, ")");
+                }
             }
         }
     }
@@ -316,21 +368,43 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 ));
             }
             if upper < MAX_ARRAYS {
-                write!(self.stdout, "z.union([");
-                for bound in lower..upper + 1 {
-                    if bound != 0 {
-                        write!(self.stdout, ",");
-                    }
-                    write!(self.stdout, "z.tuple([");
-                    for index in 0..bound {
-                        if index != 0 {
+                if self.is_type_mode {
+                    write!(self.stdout, "z.ZodUnion<readonly [");
+                    for bound in lower..upper + 1 {
+                        if bound != 0 {
                             write!(self.stdout, ",");
                         }
-                        self.visit_type(&entry.entry_type)?;
+                        write!(self.stdout, "z.ZodTuple<[");
+                        for index in 0..bound {
+                            if index != 0 {
+                                write!(self.stdout, ",");
+                            }
+                            self.visit_type(&entry.entry_type)?;
+                        }
+                        write!(self.stdout, "], null>");
+                    }
+                    write!(self.stdout, "]>");
+                } else {
+                    write!(self.stdout, "z.union([");
+                    for bound in lower..upper + 1 {
+                        if bound != 0 {
+                            write!(self.stdout, ",");
+                        }
+                        write!(self.stdout, "z.tuple([");
+                        for index in 0..bound {
+                            if index != 0 {
+                                write!(self.stdout, ",");
+                            }
+                            self.visit_type(&entry.entry_type)?;
+                        }
+                        write!(self.stdout, "])");
                     }
                     write!(self.stdout, "])");
                 }
-                write!(self.stdout, "])");
+            } else if self.is_type_mode {
+                write!(self.stdout, "z.ZodArray<");
+                self.visit_type(&entry.entry_type)?;
+                write!(self.stdout, ">");
             } else {
                 write!(self.stdout, "z.array(");
                 self.visit_type(&entry.entry_type)?;
@@ -404,6 +478,29 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 _ => {}
             }
         }
+        if self.is_type_mode {
+            match ident.ident {
+                "bool" => write!(self.stdout, "z.ZodBoolean"),
+                "uint" | "nint" | "int" | "float16" | "float32" | "float64" | "float16-32"
+                | "float32-64" | "float" | "number" => {
+                    write!(self.stdout, "z.ZodNumber")
+                }
+                "biguint" | "bignint" | "bigint" => {
+                    write!(self.stdout, "z.ZodBigInt")
+                }
+                "bstr" | "bytes" | "tstr" | "text" | "regexp" => {
+                    write!(self.stdout, "z.ZodString")
+                }
+                "any" => write!(self.stdout, "z.ZodAny"),
+                "nil" | "null" => write!(self.stdout, "z.ZodNull"),
+                "true" => write!(self.stdout, "z.ZodLiteral<true>"),
+                "false" => write!(self.stdout, "z.ZodLiteral<false>"),
+                "undefined" => write!(self.stdout, "z.ZodUndefined"),
+                "uri" => write!(self.stdout, "z.ZodURL"),
+                ident => write!(self.stdout, "typeof {}Schema", to_namespaced(ident)),
+            };
+            return Ok(());
+        }
         match ident.ident {
             "bool" => write!(self.stdout, "z.boolean()"),
             "uint" => {
@@ -441,6 +538,10 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         };
         Ok(())
     }
+    fn visit_cddl(&mut self, cddl: &'b cddl::ast::CDDL<'a>) -> cddl::visitor::Result<Error> {
+        self.cyclic_rules = find_cyclic_rules(cddl);
+        cddl::visitor::walk_cddl(self, cddl)
+    }
     fn visit_type_rule(&mut self, tr: &'b cddl::ast::TypeRule<'a>) -> cddl::visitor::Result<Error> {
         let (namespaces, type_name) = split_namespaced(&tr.name);
         for namespace in &namespaces {
@@ -455,6 +556,22 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             },
             &tr.generic_params,
         )?;
+        write!(self.stdout, ": ");
+        if self.cyclic_rules.contains(tr.name.ident) {
+            write!(self.stdout, "z.ZodType");
+        } else {
+            self.is_type_mode = true;
+            if tr.value.type_choices.len() == 1
+                && is_primitive_type(&tr.value.type_choices.first().unwrap().type1.type2)
+            {
+                self.visit_type(&tr.value)?;
+            } else {
+                write!(self.stdout, "z.ZodLazy<");
+                self.visit_type(&tr.value)?;
+                write!(self.stdout, ">");
+            }
+            self.is_type_mode = false;
+        }
         write!(self.stdout, " = ");
         if tr.value.type_choices.len() == 1
             && is_primitive_type(&tr.value.type_choices.first().unwrap().type1.type2)
@@ -476,7 +593,11 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             return Ok(());
         }
         if t.type_choices.len() != 1 {
-            write!(self.stdout, "z.union([");
+            if self.is_type_mode {
+                write!(self.stdout, "z.ZodUnion<readonly [");
+            } else {
+                write!(self.stdout, "z.union([");
+            }
         }
         for i in 0..t.type_choices.len() {
             if i != 0 {
@@ -485,7 +606,11 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             self.visit_type1(&t.type_choices[i].type1)?;
         }
         if t.type_choices.len() != 1 {
-            write!(self.stdout, "])");
+            if self.is_type_mode {
+                write!(self.stdout, "]>");
+            } else {
+                write!(self.stdout, "])");
+            }
         }
         Ok(())
     }
@@ -526,7 +651,15 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             },
             &gr.generic_params,
         )?;
-        write!(self.stdout, " = z.lazy(() => ");
+        if self.cyclic_rules.contains(gr.name.ident) {
+            write!(self.stdout, ": z.ZodType = z.lazy(() => ");
+        } else {
+            write!(self.stdout, ": z.ZodLazy<");
+            self.is_type_mode = true;
+            self.visit_group_choice(&choice)?;
+            self.is_type_mode = false;
+            write!(self.stdout, "> = z.lazy(() => ");
+        }
         self.visit_group_choice(&choice)?;
         writeln!(self.stdout, ");");
 
@@ -551,8 +684,14 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 self.exit_map();
                 self.print_group_joiner();
                 if matches!(calculate_occurrence(&ge.occur), (0, max) if max > 0) {
-                    self.visit_type_groupname_entry(ge)?;
-                    write!(self.stdout, ".or(z.object({{}}))");
+                    if self.is_type_mode {
+                        write!(self.stdout, "z.ZodUnion<readonly [");
+                        self.visit_type_groupname_entry(ge)?;
+                        write!(self.stdout, ",z.ZodObject<{{}}>]>");
+                    } else {
+                        self.visit_type_groupname_entry(ge)?;
+                        write!(self.stdout, ".or(z.object({{}}))");
+                    }
                 } else {
                     self.visit_type_groupname_entry(ge)?;
                 }
@@ -561,8 +700,14 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 self.exit_map();
                 self.print_group_joiner();
                 if matches!(calculate_occurrence(&occur), (0, max) if max > 0) {
-                    self.visit_group(group)?;
-                    write!(self.stdout, ".or(z.object({{}}))");
+                    if self.is_type_mode {
+                        write!(self.stdout, "z.ZodUnion<readonly [");
+                        self.visit_group(group)?;
+                        write!(self.stdout, ",z.ZodObject<{{}}>]>");
+                    } else {
+                        self.visit_group(group)?;
+                        write!(self.stdout, ".or(z.object({{}}))");
+                    }
                 } else {
                     self.visit_group(group)?;
                 }
@@ -581,11 +726,18 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             entry.entry_type, entry.entry_type
         ));
         self.visit_memberkey(&mk)?;
+        let is_optional = matches!(calculate_occurrence(&entry.occur), (0, max) if max > 0)
+            && !matches!(&mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. });
+        if self.is_type_mode && is_optional {
+            write!(self.stdout, "z.ZodOptional<");
+        }
         self.visit_type(&entry.entry_type)?;
-        if matches!(calculate_occurrence(&entry.occur), (0, max) if max > 0)
-            && !matches!(&mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. })
-        {
-            write!(self.stdout, ".optional()");
+        if is_optional {
+            if self.is_type_mode {
+                write!(self.stdout, ">");
+            } else {
+                write!(self.stdout, ".optional()");
+            }
         }
         self.exit_record();
         Ok(())
@@ -599,7 +751,11 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     }
     fn visit_group(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         if g.group_choices.len() != 1 {
-            write!(self.stdout, "z.union([");
+            if self.is_type_mode {
+                write!(self.stdout, "z.ZodUnion<readonly [");
+            } else {
+                write!(self.stdout, "z.union([");
+            }
         }
         for i in 0..g.group_choices.len() {
             if i != 0 {
@@ -608,7 +764,11 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             self.visit_group_choice(&g.group_choices[i])?;
         }
         if g.group_choices.len() != 1 {
-            write!(self.stdout, "])");
+            if self.is_type_mode {
+                write!(self.stdout, "]>");
+            } else {
+                write!(self.stdout, "])");
+            }
         }
         Ok(())
     }
@@ -616,6 +776,12 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         &mut self,
         gc: &'b cddl::ast::GroupChoice<'a>,
     ) -> cddl::visitor::Result<Error> {
+        if self.is_type_mode {
+            let item_count = count_group_choice_items(gc);
+            for _ in 1..item_count {
+                write!(self.stdout, "z.ZodIntersection<");
+            }
+        }
         self.nested_group_choices.push(GroupChoiceContext {
             in_object: false,
             is_first: true,
@@ -672,71 +838,109 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             value_mode: ValueMode::Generic,
         });
         if let Some(op) = &t1.operator {
-            self.visit_type2(&t1.type2)?;
-
-            self.nested_type1.last_mut().unwrap().value_mode = ValueMode::JavaScript;
-            match op.operator {
-                cddl::ast::RangeCtlOp::RangeOp { is_inclusive, .. } => {
-                    if is_inclusive {
-                        write!(self.stdout, ".gte(");
+            if self.is_type_mode {
+                match op.operator {
+                    cddl::ast::RangeCtlOp::RangeOp { .. } => {
                         self.visit_type2(&t1.type2)?;
-                        write!(self.stdout, ").lte(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
-                    } else {
-                        write!(self.stdout, ".gt(");
-                        self.visit_type2(&t1.type2)?;
-                        write!(self.stdout, ").lt(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
                     }
+                    cddl::ast::RangeCtlOp::CtlOp { ctrl, .. } => match ctrl {
+                        cddl::token::ControlOperator::DEFAULT => {
+                            write!(self.stdout, "z.ZodDefault<");
+                            self.visit_type2(&t1.type2)?;
+                            write!(self.stdout, ">");
+                        }
+                        cddl::token::ControlOperator::SIZE
+                        | cddl::token::ControlOperator::PCRE
+                        | cddl::token::ControlOperator::REGEXP
+                        | cddl::token::ControlOperator::LT
+                        | cddl::token::ControlOperator::LE
+                        | cddl::token::ControlOperator::GT
+                        | cddl::token::ControlOperator::GE => {
+                            self.visit_type2(&t1.type2)?;
+                        }
+                        cddl::token::ControlOperator::EQ | cddl::token::ControlOperator::NE => {
+                            unimplemented!();
+                        }
+                        cddl::token::ControlOperator::WITHIN
+                        | cddl::token::ControlOperator::AND => {
+                            write!(self.stdout, "z.ZodIntersection<");
+                            self.visit_type2(&t1.type2)?;
+                            write!(self.stdout, ",");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ">");
+                        }
+                        _ => unimplemented!(),
+                    },
                 }
-                cddl::ast::RangeCtlOp::CtlOp { ctrl, .. } => match ctrl {
-                    cddl::token::ControlOperator::DEFAULT => {
-                        write!(self.stdout, ".default(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
+            } else {
+                self.visit_type2(&t1.type2)?;
+
+                self.nested_type1.last_mut().unwrap().value_mode = ValueMode::JavaScript;
+                match op.operator {
+                    cddl::ast::RangeCtlOp::RangeOp { is_inclusive, .. } => {
+                        if is_inclusive {
+                            write!(self.stdout, ".gte(");
+                            self.visit_type2(&t1.type2)?;
+                            write!(self.stdout, ").lte(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        } else {
+                            write!(self.stdout, ".gt(");
+                            self.visit_type2(&t1.type2)?;
+                            write!(self.stdout, ").lt(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
                     }
-                    cddl::token::ControlOperator::SIZE => {
-                        write!(self.stdout, ".length(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
-                    }
-                    cddl::token::ControlOperator::PCRE | cddl::token::ControlOperator::REGEXP => {
-                        write!(self.stdout, ".regex(new RegExp(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, "))");
-                    }
-                    cddl::token::ControlOperator::LT => {
-                        write!(self.stdout, ".lt(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
-                    }
-                    cddl::token::ControlOperator::LE => {
-                        write!(self.stdout, ".lte(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
-                    }
-                    cddl::token::ControlOperator::GT => {
-                        write!(self.stdout, ".gt(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
-                    }
-                    cddl::token::ControlOperator::GE => {
-                        write!(self.stdout, ".gte(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
-                    }
-                    cddl::token::ControlOperator::EQ | cddl::token::ControlOperator::NE => {
-                        unimplemented!();
-                    }
-                    cddl::token::ControlOperator::WITHIN | cddl::token::ControlOperator::AND => {
-                        write!(self.stdout, ".and(");
-                        self.visit_type2(&op.type2)?;
-                        write!(self.stdout, ")");
-                    }
-                    _ => unimplemented!(),
-                },
+                    cddl::ast::RangeCtlOp::CtlOp { ctrl, .. } => match ctrl {
+                        cddl::token::ControlOperator::DEFAULT => {
+                            write!(self.stdout, ".default(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
+                        cddl::token::ControlOperator::SIZE => {
+                            write!(self.stdout, ".length(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
+                        cddl::token::ControlOperator::PCRE
+                        | cddl::token::ControlOperator::REGEXP => {
+                            write!(self.stdout, ".regex(new RegExp(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, "))");
+                        }
+                        cddl::token::ControlOperator::LT => {
+                            write!(self.stdout, ".lt(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
+                        cddl::token::ControlOperator::LE => {
+                            write!(self.stdout, ".lte(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
+                        cddl::token::ControlOperator::GT => {
+                            write!(self.stdout, ".gt(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
+                        cddl::token::ControlOperator::GE => {
+                            write!(self.stdout, ".gte(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
+                        cddl::token::ControlOperator::EQ | cddl::token::ControlOperator::NE => {
+                            unimplemented!();
+                        }
+                        cddl::token::ControlOperator::WITHIN
+                        | cddl::token::ControlOperator::AND => {
+                            write!(self.stdout, ".and(");
+                            self.visit_type2(&op.type2)?;
+                            write!(self.stdout, ")");
+                        }
+                        _ => unimplemented!(),
+                    },
+                }
             }
         } else {
             self.nested_type1.last_mut().unwrap().value_mode = ValueMode::Literal;
@@ -758,7 +962,11 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 self.visit_array(&group)?;
             }
             cddl::ast::Type2::Any { .. } => {
-                write!(self.stdout, "z.unknown()");
+                if self.is_type_mode {
+                    write!(self.stdout, "z.ZodUnknown");
+                } else {
+                    write!(self.stdout, "z.unknown()");
+                }
             }
             // The default has the correct behavior for the rest of the cases.
             t2 => {
@@ -769,6 +977,35 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     }
 
     fn visit_value(&mut self, value: &cddl::token::Value<'a>) -> cddl::visitor::Result<Error> {
+        if self.is_type_mode {
+            match self.nested_type1.last().unwrap().value_mode {
+                ValueMode::Literal => match value {
+                    cddl::token::Value::INT(value) => write!(self.stdout, "z.ZodLiteral<{}>", value),
+                    cddl::token::Value::UINT(value) => {
+                        write!(self.stdout, "z.ZodLiteral<{}>", value)
+                    }
+                    cddl::token::Value::FLOAT(value) => {
+                        write!(self.stdout, "z.ZodLiteral<{}>", value)
+                    }
+                    cddl::token::Value::TEXT(value) => {
+                        write!(self.stdout, "z.ZodLiteral<\"{}\">", value)
+                    }
+                    cddl::token::Value::BYTE(value) => {
+                        write!(self.stdout, "z.ZodLiteral<\"{}\">", value)
+                    }
+                },
+                ValueMode::Generic => match value {
+                    cddl::token::Value::INT(_)
+                    | cddl::token::Value::UINT(_)
+                    | cddl::token::Value::FLOAT(_) => write!(self.stdout, "z.ZodNumber"),
+                    cddl::token::Value::TEXT(_) | cddl::token::Value::BYTE(_) => {
+                        write!(self.stdout, "z.ZodString")
+                    }
+                },
+                ValueMode::JavaScript => unreachable!(),
+            };
+            return Ok(());
+        }
         match self.nested_type1.last().unwrap().value_mode {
             ValueMode::Literal => match value {
                 cddl::token::Value::INT(value) => write!(self.stdout, "z.literal({})", value),
@@ -796,6 +1033,110 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         };
         Ok(())
     }
+}
+
+fn count_group_choice_items(gc: &cddl::ast::GroupChoice) -> usize {
+    if gc.group_entries.is_empty() {
+        return 1;
+    }
+    let mut count = 0;
+    let mut in_object = false;
+    for (entry, _) in &gc.group_entries {
+        match entry {
+            cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
+                let mk = ge.member_key.as_ref().unwrap();
+                match mk {
+                    cddl::ast::MemberKey::Type1 { .. } => {
+                        in_object = false;
+                        count += 1;
+                    }
+                    cddl::ast::MemberKey::Bareword { .. } | cddl::ast::MemberKey::Value { .. } => {
+                        if !in_object {
+                            in_object = true;
+                            count += 1;
+                        }
+                    }
+                    cddl::ast::MemberKey::NonMemberKey { .. } => {
+                        unimplemented!()
+                    }
+                }
+            }
+            cddl::ast::GroupEntry::TypeGroupname { .. }
+            | cddl::ast::GroupEntry::InlineGroup { .. } => {
+                in_object = false;
+                count += 1;
+            }
+        }
+    }
+    count
+}
+
+struct RefCollector {
+    refs: Vec<String>,
+}
+
+impl<'a, 'b: 'a> Visitor<'a, 'b, Error> for RefCollector {
+    fn visit_identifier(
+        &mut self,
+        ident: &cddl::ast::Identifier<'a>,
+    ) -> cddl::visitor::Result<Error> {
+        self.refs.push(ident.ident.to_string());
+        Ok(())
+    }
+}
+
+fn find_cyclic_rules(cddl: &cddl::ast::CDDL) -> std::collections::HashSet<String> {
+    let mut rule_order = Vec::new();
+    let mut deps: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    for rule in &cddl.rules {
+        match rule {
+            cddl::ast::Rule::Type { rule: tr, .. } => {
+                let name = tr.name.ident.to_string();
+                let mut collector = RefCollector { refs: Vec::new() };
+                let _ = collector.visit_type(&tr.value);
+                rule_order.push(name.clone());
+                deps.entry(name).or_default().extend(collector.refs);
+            }
+            cddl::ast::Rule::Group { rule: gr, .. } => {
+                let name = gr.name.ident.to_string();
+                let mut collector = RefCollector { refs: Vec::new() };
+                let _ = collector.visit_group_entry(&gr.entry);
+                rule_order.push(name.clone());
+                deps.entry(name).or_default().extend(collector.refs);
+            }
+        }
+    }
+
+    let mut state: std::collections::HashMap<String, u8> = std::collections::HashMap::new();
+    let mut cyclic = std::collections::HashSet::new();
+
+    fn dfs(
+        u: &str,
+        deps: &std::collections::HashMap<String, Vec<String>>,
+        state: &mut std::collections::HashMap<String, u8>,
+        cyclic: &mut std::collections::HashSet<String>,
+    ) {
+        state.insert(u.to_string(), 1);
+        if let Some(neighbors) = deps.get(u) {
+            for v in neighbors {
+                match state.get(v).copied().unwrap_or(0) {
+                    0 => dfs(v, deps, state, cyclic),
+                    1 => {
+                        cyclic.insert(v.clone());
+                    }
+                    _ => {}
+                }
+            }
+        }
+        state.insert(u.to_string(), 2);
+    }
+
+    for rule in &rule_order {
+        if state.get(rule).copied().unwrap_or(0) == 0 {
+            dfs(rule, &deps, &mut state, &mut cyclic);
+        }
+    }
+    cyclic
 }
 
 fn is_primitive_type(type2: &cddl::ast::Type2) -> bool {
