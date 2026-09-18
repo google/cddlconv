@@ -2,25 +2,34 @@
 source: tests/zod.rs
 expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
-export const ExtensibleMapExampleSchema = z.lazy(() => z.object({
+export const ExtensibleMapExampleSchema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
+"optional-key":z.ZodOptional<z.ZodNumber>}>,z.ZodRecord<
+z.ZodString,z.ZodAny>>> = z.lazy(() => z.object({
 "optional-key":z.number().int().optional()}).and(
 z.record(
 z.string(),z.any()))
 );
-export const ExtensibleMapExample2Schema = z.lazy(() => z.object({
+export const ExtensibleMapExample2Schema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
+"optional-key":z.ZodOptional<z.ZodNumber>}>,z.ZodRecord<
+z.ZodString,z.ZodAny>>> = z.lazy(() => z.object({
 "optional-key":z.number().int().optional()}).and(
 z.record(
 z.string(),z.any()))
 );
-export const ExtensibleMapExample3Schema = z.lazy(() => z.object({
+export const ExtensibleMapExample3Schema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
+"optional-key":z.ZodOptional<z.ZodNumber>}>,z.ZodRecord<
+z.ZodString,z.ZodAny>>> = z.lazy(() => z.object({
 "optional-key":z.number().int().optional()}).and(
 z.record(
 z.string(),z.any()))
 );
-export const ExtensibleMapExample4Schema = z.lazy(() => z.record(
+export const ExtensibleMapExample4Schema: z.ZodLazy<z.ZodIntersection<z.ZodRecord<
+z.ZodLiteral<"optional-key">,z.ZodOptional<z.ZodNumber>>,z.ZodRecord<
+z.ZodString,z.ZodAny>>> = z.lazy(() => z.record(
 z.literal("optional-key"),z.number().int().optional()).and(
 z.record(
 z.string(),z.any()))
 );
-export const ExampleMapSchema = z.lazy(() => z.object({
+export const ExampleMapSchema: z.ZodLazy<z.ZodObject<{
+"hyphenated-key":z.ZodOptional<z.ZodString>,"another-key":z.ZodOptional<z.ZodString>,"standardIdentifier":z.ZodOptional<z.ZodString>,"1":z.ZodOptional<z.ZodString>}>> = z.lazy(() => z.object({
 "hyphenated-key":z.string().optional(),"another-key":z.string().optional(),"standardIdentifier":z.string().optional(),"1":z.string().optional()}));
