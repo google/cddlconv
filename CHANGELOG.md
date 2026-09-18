@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/google/cddlconv/compare/cddlconv-v0.1.10...cddlconv-v0.1.11) (2026-09-18)
+
+
+### Features
+
+* specify explicit types for generated zod schema variables ([#90](https://github.com/google/cddlconv/issues/90)) ([65354e8](https://github.com/google/cddlconv/commit/65354e8feb24552d0d8c3c519af7c0b53b75d547))
+
 ## [0.1.10](https://github.com/google/cddlconv/compare/cddlconv-v0.1.9...cddlconv-v0.1.10) (2026-08-25)
 
 
