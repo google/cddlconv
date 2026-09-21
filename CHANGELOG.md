@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/google/cddlconv/compare/cddlconv-v0.1.11...cddlconv-v0.1.12) (2026-09-21)
+
+
+### Bug Fixes
+
+* generate valid zod v3 types for enums, unions, and non-empty arrays ([#92](https://github.com/google/cddlconv/issues/92)) ([4cc5d36](https://github.com/google/cddlconv/commit/4cc5d3680686f199edc5badc4df01dacabaa8135))
+
 ## [0.1.11](https://github.com/google/cddlconv/compare/cddlconv-v0.1.10...cddlconv-v0.1.11) (2026-09-18)
 
 
