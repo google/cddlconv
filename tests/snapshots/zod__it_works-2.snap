@@ -10,20 +10,20 @@ CommandDataSchema)
 ExtensibleSchema)
 );
 export const 
-CommandDataSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowserCommandSchema,typeof BrowsingContextCommandSchema,typeof InputCommandSchema,typeof NetworkCommandSchema,typeof ScriptCommandSchema,typeof SessionCommandSchema]>> = z.lazy(() => z.union([BrowserCommandSchema,BrowsingContextCommandSchema,InputCommandSchema,NetworkCommandSchema,ScriptCommandSchema,SessionCommandSchema]));
+CommandDataSchema: z.ZodLazy<z.ZodUnion<[typeof BrowserCommandSchema,typeof BrowsingContextCommandSchema,typeof InputCommandSchema,typeof NetworkCommandSchema,typeof ScriptCommandSchema,typeof SessionCommandSchema]>> = z.lazy(() => z.union([BrowserCommandSchema,BrowsingContextCommandSchema,InputCommandSchema,NetworkCommandSchema,ScriptCommandSchema,SessionCommandSchema]));
 export const EmptyParamsSchema: z.ZodLazy<typeof ExtensibleSchema> = z.lazy(() => ExtensibleSchema);
-export const MessageSchema: z.ZodLazy<z.ZodUnion<readonly [typeof CommandResponseSchema,typeof ErrorResponseSchema,typeof EventSchema]>> = z.lazy(() => z.union([CommandResponseSchema,ErrorResponseSchema,EventSchema]));
+export const MessageSchema: z.ZodLazy<z.ZodUnion<[typeof CommandResponseSchema,typeof ErrorResponseSchema,typeof EventSchema]>> = z.lazy(() => z.union([CommandResponseSchema,ErrorResponseSchema,EventSchema]));
 export const CommandResponseSchema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
 "type":z.ZodLiteral<"success">,"id":typeof JsUintSchema,"result":typeof ResultDataSchema}>,typeof ExtensibleSchema>> = z.lazy(() => z.object({
 "type":z.literal("success"),"id":JsUintSchema,"result":ResultDataSchema}).and(
 ExtensibleSchema)
 );
 export const ErrorResponseSchema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
-"type":z.ZodLiteral<"error">,"id":z.ZodUnion<readonly [typeof JsUintSchema,z.ZodNull]>,"error":typeof ErrorCodeSchema,"message":z.ZodString,"stacktrace":z.ZodOptional<z.ZodString>}>,typeof ExtensibleSchema>> = z.lazy(() => z.object({
+"type":z.ZodLiteral<"error">,"id":z.ZodUnion<[typeof JsUintSchema,z.ZodNull]>,"error":typeof ErrorCodeSchema,"message":z.ZodString,"stacktrace":z.ZodOptional<z.ZodString>}>,typeof ExtensibleSchema>> = z.lazy(() => z.object({
 "type":z.literal("error"),"id":z.union([JsUintSchema,z.null()]),"error":ErrorCodeSchema,"message":z.string(),"stacktrace":z.string().optional()}).and(
 ExtensibleSchema)
 );
-export const ResultDataSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowsingContextResultSchema,typeof EmptyResultSchema,typeof NetworkResultSchema,typeof ScriptResultSchema,typeof SessionResultSchema]>> = z.lazy(() => z.union([BrowsingContextResultSchema,EmptyResultSchema,NetworkResultSchema,ScriptResultSchema,SessionResultSchema]));
+export const ResultDataSchema: z.ZodLazy<z.ZodUnion<[typeof BrowsingContextResultSchema,typeof EmptyResultSchema,typeof NetworkResultSchema,typeof ScriptResultSchema,typeof SessionResultSchema]>> = z.lazy(() => z.union([BrowsingContextResultSchema,EmptyResultSchema,NetworkResultSchema,ScriptResultSchema,SessionResultSchema]));
 export const EmptyResultSchema: z.ZodLazy<typeof ExtensibleSchema> = z.lazy(() => ExtensibleSchema);
 export const EventSchema: z.ZodLazy<z.ZodIntersection<z.ZodIntersection<z.ZodObject<{
 "type":z.ZodLiteral<"event">}>,typeof EventDataSchema>,typeof ExtensibleSchema>> = z.lazy(() => z.object({
@@ -33,17 +33,17 @@ EventDataSchema)
 ExtensibleSchema)
 );
 export const 
-EventDataSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowsingContextEventSchema,typeof LogEventSchema,typeof NetworkEventSchema,typeof ScriptEventSchema]>> = z.lazy(() => z.union([BrowsingContextEventSchema,LogEventSchema,NetworkEventSchema,ScriptEventSchema]));
+EventDataSchema: z.ZodLazy<z.ZodUnion<[typeof BrowsingContextEventSchema,typeof LogEventSchema,typeof NetworkEventSchema,typeof ScriptEventSchema]>> = z.lazy(() => z.union([BrowsingContextEventSchema,LogEventSchema,NetworkEventSchema,ScriptEventSchema]));
 export const 
 ExtensibleSchema: z.ZodLazy<z.ZodRecord<
 z.ZodString,z.ZodAny>> = z.lazy(() => z.record(
 z.string(),z.any()));
 export const JsIntSchema: z.ZodNumber = z.number().int().gte(-9007199254740991).lte(9007199254740991);
 export const JsUintSchema: z.ZodNumber = z.number().int().nonnegative().gte(0).lte(9007199254740991);
-export const ErrorCodeSchema: z.ZodLazy<z.ZodEnum<{"invalid argument":"invalid argument","invalid session id":"invalid session id","move target out of bounds":"move target out of bounds","no such alert":"no such alert","no such element":"no such element","no such frame":"no such frame","no such handle":"no such handle","no such history entry":"no such history entry","no such intercept":"no such intercept","no such node":"no such node","no such request":"no such request","no such script":"no such script","session not created":"session not created","unable to capture screen":"unable to capture screen","unable to close browser":"unable to close browser","unknown command":"unknown command","unknown error":"unknown error","unsupported operation":"unsupported operation",}>> = z.lazy(() => z.enum(["invalid argument","invalid session id","move target out of bounds","no such alert","no such element","no such frame","no such handle","no such history entry","no such intercept","no such node","no such request","no such script","session not created","unable to capture screen","unable to close browser","unknown command","unknown error","unsupported operation",]));
+export const ErrorCodeSchema: z.ZodLazy<z.ZodEnum<["invalid argument","invalid session id","move target out of bounds","no such alert","no such element","no such frame","no such handle","no such history entry","no such intercept","no such node","no such request","no such script","session not created","unable to capture screen","unable to close browser","unknown command","unknown error","unsupported operation",]>> = z.lazy(() => z.enum(["invalid argument","invalid session id","move target out of bounds","no such alert","no such element","no such frame","no such handle","no such history entry","no such intercept","no such node","no such request","no such script","session not created","unable to capture screen","unable to close browser","unknown command","unknown error","unsupported operation",]));
 export const 
-SessionCommandSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Session.EndSchema,typeof Session.NewSchema,typeof Session.StatusSchema,typeof Session.SubscribeSchema,typeof Session.UnsubscribeSchema]>> = z.lazy(() => z.union([Session.EndSchema,Session.NewSchema,Session.StatusSchema,Session.SubscribeSchema,Session.UnsubscribeSchema]));
-export const SessionResultSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Session.NewResultSchema,typeof Session.StatusResultSchema]>> = z.lazy(() => z.union([Session.NewResultSchema,Session.StatusResultSchema]));
+SessionCommandSchema: z.ZodLazy<z.ZodUnion<[typeof Session.EndSchema,typeof Session.NewSchema,typeof Session.StatusSchema,typeof Session.SubscribeSchema,typeof Session.UnsubscribeSchema]>> = z.lazy(() => z.union([Session.EndSchema,Session.NewSchema,Session.StatusSchema,Session.SubscribeSchema,Session.UnsubscribeSchema]));
+export const SessionResultSchema: z.ZodLazy<z.ZodUnion<[typeof Session.NewResultSchema,typeof Session.StatusResultSchema]>> = z.lazy(() => z.union([Session.NewResultSchema,Session.StatusResultSchema]));
 export namespace Session {
 export const CapabilitiesRequestSchema: z.ZodLazy<z.ZodObject<{
 "alwaysMatch":z.ZodOptional<typeof Session.CapabilityRequestSchema>,"firstMatch":z.ZodOptional<z.ZodArray<typeof Session.CapabilityRequestSchema>>}>> = z.lazy(() => z.object({
@@ -57,7 +57,7 @@ ExtensibleSchema)
 );
 }
 export namespace Session {
-export const ProxyConfigurationSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Session.AutodetectProxyConfigurationSchema,typeof Session.DirectProxyConfigurationSchema,typeof Session.ManualProxyConfigurationSchema,typeof Session.PacProxyConfigurationSchema,typeof Session.SystemProxyConfigurationSchema,z.ZodObject<{
+export const ProxyConfigurationSchema: z.ZodLazy<z.ZodUnion<[typeof Session.AutodetectProxyConfigurationSchema,typeof Session.DirectProxyConfigurationSchema,typeof Session.ManualProxyConfigurationSchema,typeof Session.PacProxyConfigurationSchema,typeof Session.SystemProxyConfigurationSchema,z.ZodObject<{
 }>]>> = z.lazy(() => z.union([Session.AutodetectProxyConfigurationSchema,Session.DirectProxyConfigurationSchema,Session.ManualProxyConfigurationSchema,Session.PacProxyConfigurationSchema,Session.SystemProxyConfigurationSchema,z.object({
 })]));
 }
@@ -80,7 +80,7 @@ ExtensibleSchema)
 export namespace Session {
 export const 
 ManualProxyConfigurationSchema: z.ZodLazy<z.ZodIntersection<z.ZodIntersection<z.ZodIntersection<z.ZodObject<{
-"proxyType":z.ZodLiteral<"manual">,"ftpProxy":z.ZodOptional<z.ZodString>,"httpProxy":z.ZodOptional<z.ZodString>,"sslProxy":z.ZodOptional<z.ZodString>}>,z.ZodUnion<readonly [typeof Session.SocksProxyConfigurationSchema,z.ZodObject<{}>]>>,z.ZodObject<{
+"proxyType":z.ZodLiteral<"manual">,"ftpProxy":z.ZodOptional<z.ZodString>,"httpProxy":z.ZodOptional<z.ZodString>,"sslProxy":z.ZodOptional<z.ZodString>}>,z.ZodUnion<[typeof Session.SocksProxyConfigurationSchema,z.ZodObject<{}>]>>,z.ZodObject<{
 "noProxy":z.ZodOptional<z.ZodArray<z.ZodString>>}>>,typeof ExtensibleSchema>> = z.lazy(() => z.object({
 "proxyType":z.literal("manual"),"ftpProxy":z.string().optional(),"httpProxy":z.string().optional(),"sslProxy":z.string().optional()}).and(
 Session.SocksProxyConfigurationSchema.or(z.object({})))
@@ -176,10 +176,10 @@ CloseSchema: z.ZodLazy<z.ZodObject<{
 "method":z.literal("browser.close"),"params":EmptyParamsSchema}));
 }
 export const 
-BrowsingContextCommandSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowsingContext.ActivateSchema,typeof BrowsingContext.CaptureScreenshotSchema,typeof BrowsingContext.CloseSchema,typeof BrowsingContext.CreateSchema,typeof BrowsingContext.GetTreeSchema,typeof BrowsingContext.HandleUserPromptSchema,typeof BrowsingContext.LocateNodesSchema,typeof BrowsingContext.NavigateSchema,typeof BrowsingContext.PrintSchema,typeof BrowsingContext.ReloadSchema,typeof BrowsingContext.SetViewportSchema,typeof BrowsingContext.TraverseHistorySchema]>> = z.lazy(() => z.union([BrowsingContext.ActivateSchema,BrowsingContext.CaptureScreenshotSchema,BrowsingContext.CloseSchema,BrowsingContext.CreateSchema,BrowsingContext.GetTreeSchema,BrowsingContext.HandleUserPromptSchema,BrowsingContext.LocateNodesSchema,BrowsingContext.NavigateSchema,BrowsingContext.PrintSchema,BrowsingContext.ReloadSchema,BrowsingContext.SetViewportSchema,BrowsingContext.TraverseHistorySchema]));
-export const BrowsingContextResultSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowsingContext.CaptureScreenshotResultSchema,typeof BrowsingContext.CreateResultSchema,typeof BrowsingContext.GetTreeResultSchema,typeof BrowsingContext.LocateNodesResultSchema,typeof BrowsingContext.NavigateResultSchema,typeof BrowsingContext.PrintResultSchema,typeof BrowsingContext.TraverseHistoryResultSchema]>> = z.lazy(() => z.union([BrowsingContext.CaptureScreenshotResultSchema,BrowsingContext.CreateResultSchema,BrowsingContext.GetTreeResultSchema,BrowsingContext.LocateNodesResultSchema,BrowsingContext.NavigateResultSchema,BrowsingContext.PrintResultSchema,BrowsingContext.TraverseHistoryResultSchema]));
+BrowsingContextCommandSchema: z.ZodLazy<z.ZodUnion<[typeof BrowsingContext.ActivateSchema,typeof BrowsingContext.CaptureScreenshotSchema,typeof BrowsingContext.CloseSchema,typeof BrowsingContext.CreateSchema,typeof BrowsingContext.GetTreeSchema,typeof BrowsingContext.HandleUserPromptSchema,typeof BrowsingContext.LocateNodesSchema,typeof BrowsingContext.NavigateSchema,typeof BrowsingContext.PrintSchema,typeof BrowsingContext.ReloadSchema,typeof BrowsingContext.SetViewportSchema,typeof BrowsingContext.TraverseHistorySchema]>> = z.lazy(() => z.union([BrowsingContext.ActivateSchema,BrowsingContext.CaptureScreenshotSchema,BrowsingContext.CloseSchema,BrowsingContext.CreateSchema,BrowsingContext.GetTreeSchema,BrowsingContext.HandleUserPromptSchema,BrowsingContext.LocateNodesSchema,BrowsingContext.NavigateSchema,BrowsingContext.PrintSchema,BrowsingContext.ReloadSchema,BrowsingContext.SetViewportSchema,BrowsingContext.TraverseHistorySchema]));
+export const BrowsingContextResultSchema: z.ZodLazy<z.ZodUnion<[typeof BrowsingContext.CaptureScreenshotResultSchema,typeof BrowsingContext.CreateResultSchema,typeof BrowsingContext.GetTreeResultSchema,typeof BrowsingContext.LocateNodesResultSchema,typeof BrowsingContext.NavigateResultSchema,typeof BrowsingContext.PrintResultSchema,typeof BrowsingContext.TraverseHistoryResultSchema]>> = z.lazy(() => z.union([BrowsingContext.CaptureScreenshotResultSchema,BrowsingContext.CreateResultSchema,BrowsingContext.GetTreeResultSchema,BrowsingContext.LocateNodesResultSchema,BrowsingContext.NavigateResultSchema,BrowsingContext.PrintResultSchema,BrowsingContext.TraverseHistoryResultSchema]));
 export const 
-BrowsingContextEventSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowsingContext.ContextCreatedSchema,typeof BrowsingContext.ContextDestroyedSchema,typeof BrowsingContext.DomContentLoadedSchema,typeof BrowsingContext.DownloadWillBeginSchema,typeof BrowsingContext.FragmentNavigatedSchema,typeof BrowsingContext.LoadSchema,typeof BrowsingContext.NavigationAbortedSchema,typeof BrowsingContext.NavigationFailedSchema,typeof BrowsingContext.NavigationStartedSchema,typeof BrowsingContext.UserPromptClosedSchema,typeof BrowsingContext.UserPromptOpenedSchema]>> = z.lazy(() => z.union([BrowsingContext.ContextCreatedSchema,BrowsingContext.ContextDestroyedSchema,BrowsingContext.DomContentLoadedSchema,BrowsingContext.DownloadWillBeginSchema,BrowsingContext.FragmentNavigatedSchema,BrowsingContext.LoadSchema,BrowsingContext.NavigationAbortedSchema,BrowsingContext.NavigationFailedSchema,BrowsingContext.NavigationStartedSchema,BrowsingContext.UserPromptClosedSchema,BrowsingContext.UserPromptOpenedSchema]));
+BrowsingContextEventSchema: z.ZodLazy<z.ZodUnion<[typeof BrowsingContext.ContextCreatedSchema,typeof BrowsingContext.ContextDestroyedSchema,typeof BrowsingContext.DomContentLoadedSchema,typeof BrowsingContext.DownloadWillBeginSchema,typeof BrowsingContext.FragmentNavigatedSchema,typeof BrowsingContext.LoadSchema,typeof BrowsingContext.NavigationAbortedSchema,typeof BrowsingContext.NavigationFailedSchema,typeof BrowsingContext.NavigationStartedSchema,typeof BrowsingContext.UserPromptClosedSchema,typeof BrowsingContext.UserPromptOpenedSchema]>> = z.lazy(() => z.union([BrowsingContext.ContextCreatedSchema,BrowsingContext.ContextDestroyedSchema,BrowsingContext.DomContentLoadedSchema,BrowsingContext.DownloadWillBeginSchema,BrowsingContext.FragmentNavigatedSchema,BrowsingContext.LoadSchema,BrowsingContext.NavigationAbortedSchema,BrowsingContext.NavigationFailedSchema,BrowsingContext.NavigationStartedSchema,BrowsingContext.UserPromptClosedSchema,BrowsingContext.UserPromptOpenedSchema]));
 export namespace BrowsingContext {
 export const BrowsingContextSchema: z.ZodLazy<z.ZodString> = z.lazy(() => z.string());
 }
@@ -188,11 +188,11 @@ export const InfoListSchema: z.ZodType = z.lazy(() => z.array(BrowsingContext.In
 }
 export namespace BrowsingContext {
 export const InfoSchema: z.ZodLazy<z.ZodObject<{
-"context":typeof BrowsingContext.BrowsingContextSchema,"url":z.ZodString,"children":z.ZodUnion<readonly [typeof BrowsingContext.InfoListSchema,z.ZodNull]>,"parent":z.ZodOptional<z.ZodUnion<readonly [typeof BrowsingContext.BrowsingContextSchema,z.ZodNull]>>}>> = z.lazy(() => z.object({
+"context":typeof BrowsingContext.BrowsingContextSchema,"url":z.ZodString,"children":z.ZodUnion<[typeof BrowsingContext.InfoListSchema,z.ZodNull]>,"parent":z.ZodOptional<z.ZodUnion<[typeof BrowsingContext.BrowsingContextSchema,z.ZodNull]>>}>> = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"url":z.string(),"children":z.union([BrowsingContext.InfoListSchema,z.null()]),"parent":z.union([BrowsingContext.BrowsingContextSchema,z.null()]).optional()}));
 }
 export namespace BrowsingContext {
-export const LocatorSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowsingContext.CssLocatorSchema,typeof BrowsingContext.InnerTextLocatorSchema,typeof BrowsingContext.XPathLocatorSchema]>> = z.lazy(() => z.union([BrowsingContext.CssLocatorSchema,BrowsingContext.InnerTextLocatorSchema,BrowsingContext.XPathLocatorSchema]));
+export const LocatorSchema: z.ZodLazy<z.ZodUnion<[typeof BrowsingContext.CssLocatorSchema,typeof BrowsingContext.InnerTextLocatorSchema,typeof BrowsingContext.XPathLocatorSchema]>> = z.lazy(() => z.union([BrowsingContext.CssLocatorSchema,BrowsingContext.InnerTextLocatorSchema,BrowsingContext.XPathLocatorSchema]));
 }
 export namespace BrowsingContext {
 export const CssLocatorSchema: z.ZodLazy<z.ZodObject<{
@@ -201,7 +201,7 @@ export const CssLocatorSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace BrowsingContext {
 export const InnerTextLocatorSchema: z.ZodLazy<z.ZodObject<{
-"type":z.ZodLiteral<"innerText">,"value":z.ZodString,"ignoreCase":z.ZodOptional<z.ZodBoolean>,"matchType":z.ZodOptional<z.ZodEnum<{"full":"full","partial":"partial",}>>,"maxDepth":z.ZodOptional<typeof JsUintSchema>}>> = z.lazy(() => z.object({
+"type":z.ZodLiteral<"innerText">,"value":z.ZodString,"ignoreCase":z.ZodOptional<z.ZodBoolean>,"matchType":z.ZodOptional<z.ZodEnum<["full","partial",]>>,"maxDepth":z.ZodOptional<typeof JsUintSchema>}>> = z.lazy(() => z.object({
 "type":z.literal("innerText"),"value":z.string(),"ignoreCase":z.boolean().optional(),"matchType":z.enum(["full","partial",]).optional(),"maxDepth":JsUintSchema.optional()}));
 }
 export namespace BrowsingContext {
@@ -214,11 +214,11 @@ export const NavigationSchema: z.ZodLazy<z.ZodString> = z.lazy(() => z.string())
 }
 export namespace BrowsingContext {
 export const NavigationInfoSchema: z.ZodLazy<z.ZodObject<{
-"context":typeof BrowsingContext.BrowsingContextSchema,"navigation":z.ZodUnion<readonly [typeof BrowsingContext.NavigationSchema,z.ZodNull]>,"timestamp":typeof JsUintSchema,"url":z.ZodString}>> = z.lazy(() => z.object({
+"context":typeof BrowsingContext.BrowsingContextSchema,"navigation":z.ZodUnion<[typeof BrowsingContext.NavigationSchema,z.ZodNull]>,"timestamp":typeof JsUintSchema,"url":z.ZodString}>> = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"navigation":z.union([BrowsingContext.NavigationSchema,z.null()]),"timestamp":JsUintSchema,"url":z.string()}));
 }
 export namespace BrowsingContext {
-export const ReadinessStateSchema: z.ZodLazy<z.ZodEnum<{"none":"none","interactive":"interactive","complete":"complete",}>> = z.lazy(() => z.enum(["none","interactive","complete",]));
+export const ReadinessStateSchema: z.ZodLazy<z.ZodEnum<["none","interactive","complete",]>> = z.lazy(() => z.enum(["none","interactive","complete",]));
 }
 export namespace BrowsingContext {
 export const 
@@ -239,7 +239,7 @@ CaptureScreenshotSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace BrowsingContext {
 export const CaptureScreenshotParametersSchema: z.ZodLazy<z.ZodObject<{
-"context":typeof BrowsingContext.BrowsingContextSchema,"origin":z.ZodOptional<z.ZodDefault<z.ZodEnum<{"viewport":"viewport","document":"document",}>>>,"format":z.ZodOptional<typeof BrowsingContext.ImageFormatSchema>,"clip":z.ZodOptional<typeof BrowsingContext.ClipRectangleSchema>}>> = z.lazy(() => z.object({
+"context":typeof BrowsingContext.BrowsingContextSchema,"origin":z.ZodOptional<z.ZodDefault<z.ZodEnum<["viewport","document",]>>>,"format":z.ZodOptional<typeof BrowsingContext.ImageFormatSchema>,"clip":z.ZodOptional<typeof BrowsingContext.ClipRectangleSchema>}>> = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"origin":z.enum(["viewport","document",]).default("viewport").optional(),"format":BrowsingContext.ImageFormatSchema.optional(),"clip":BrowsingContext.ClipRectangleSchema.optional()}));
 }
 export namespace BrowsingContext {
@@ -248,7 +248,7 @@ export const ImageFormatSchema: z.ZodLazy<z.ZodObject<{
 "type":z.string(),"quality":z.number().gte(0).lte(1).optional()}));
 }
 export namespace BrowsingContext {
-export const ClipRectangleSchema: z.ZodLazy<z.ZodUnion<readonly [typeof BrowsingContext.BoxClipRectangleSchema,typeof BrowsingContext.ElementClipRectangleSchema]>> = z.lazy(() => z.union([BrowsingContext.BoxClipRectangleSchema,BrowsingContext.ElementClipRectangleSchema]));
+export const ClipRectangleSchema: z.ZodLazy<z.ZodUnion<[typeof BrowsingContext.BoxClipRectangleSchema,typeof BrowsingContext.ElementClipRectangleSchema]>> = z.lazy(() => z.union([BrowsingContext.BoxClipRectangleSchema,BrowsingContext.ElementClipRectangleSchema]));
 }
 export namespace BrowsingContext {
 export const ElementClipRectangleSchema: z.ZodLazy<z.ZodObject<{
@@ -283,7 +283,7 @@ CreateSchema: z.ZodLazy<z.ZodObject<{
 "method":z.literal("browsingContext.create"),"params":BrowsingContext.CreateParametersSchema}));
 }
 export namespace BrowsingContext {
-export const CreateTypeSchema: z.ZodLazy<z.ZodEnum<{"tab":"tab","window":"window",}>> = z.lazy(() => z.enum(["tab","window",]));
+export const CreateTypeSchema: z.ZodLazy<z.ZodEnum<["tab","window",]>> = z.lazy(() => z.enum(["tab","window",]));
 }
 export namespace BrowsingContext {
 export const CreateParametersSchema: z.ZodLazy<z.ZodObject<{
@@ -330,7 +330,7 @@ LocateNodesSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace BrowsingContext {
 export const LocateNodesParametersSchema: z.ZodLazy<z.ZodObject<{
-"context":typeof BrowsingContext.BrowsingContextSchema,"locator":typeof BrowsingContext.LocatorSchema,"maxNodeCount":z.ZodOptional<typeof JsUintSchema>,"ownership":z.ZodOptional<typeof Script.ResultOwnershipSchema>,"sandbox":z.ZodOptional<z.ZodString>,"serializationOptions":z.ZodOptional<typeof Script.SerializationOptionsSchema>,"startNodes":z.ZodOptional<z.ZodArray<typeof Script.SharedReferenceSchema>>}>> = z.lazy(() => z.object({
+"context":typeof BrowsingContext.BrowsingContextSchema,"locator":typeof BrowsingContext.LocatorSchema,"maxNodeCount":z.ZodOptional<typeof JsUintSchema>,"ownership":z.ZodOptional<typeof Script.ResultOwnershipSchema>,"sandbox":z.ZodOptional<z.ZodString>,"serializationOptions":z.ZodOptional<typeof Script.SerializationOptionsSchema>,"startNodes":z.ZodOptional<z.ZodArray<typeof Script.SharedReferenceSchema, "atleastone">>}>> = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"locator":BrowsingContext.LocatorSchema,"maxNodeCount":JsUintSchema.gte(1).optional(),"ownership":Script.ResultOwnershipSchema.optional(),"sandbox":z.string().optional(),"serializationOptions":Script.SerializationOptionsSchema.optional(),"startNodes":z.array(Script.SharedReferenceSchema).nonempty().optional()}));
 }
 export namespace BrowsingContext {
@@ -351,7 +351,7 @@ export const NavigateParametersSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace BrowsingContext {
 export const NavigateResultSchema: z.ZodLazy<z.ZodObject<{
-"navigation":z.ZodUnion<readonly [typeof BrowsingContext.NavigationSchema,z.ZodNull]>,"url":z.ZodString}>> = z.lazy(() => z.object({
+"navigation":z.ZodUnion<[typeof BrowsingContext.NavigationSchema,z.ZodNull]>,"url":z.ZodString}>> = z.lazy(() => z.object({
 "navigation":z.union([BrowsingContext.NavigationSchema,z.null()]),"url":z.string()}));
 }
 export namespace BrowsingContext {
@@ -362,7 +362,7 @@ PrintSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace BrowsingContext {
 export const PrintParametersSchema: z.ZodLazy<z.ZodObject<{
-"context":typeof BrowsingContext.BrowsingContextSchema,"background":z.ZodOptional<z.ZodDefault<z.ZodBoolean>>,"margin":z.ZodOptional<typeof BrowsingContext.PrintMarginParametersSchema>,"orientation":z.ZodOptional<z.ZodDefault<z.ZodEnum<{"portrait":"portrait","landscape":"landscape",}>>>,"page":z.ZodOptional<typeof BrowsingContext.PrintPageParametersSchema>,"pageRanges":z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [typeof JsUintSchema,z.ZodString]>>>,"scale":z.ZodOptional<z.ZodDefault<z.ZodNumber>>,"shrinkToFit":z.ZodOptional<z.ZodDefault<z.ZodBoolean>>}>> = z.lazy(() => z.object({
+"context":typeof BrowsingContext.BrowsingContextSchema,"background":z.ZodOptional<z.ZodDefault<z.ZodBoolean>>,"margin":z.ZodOptional<typeof BrowsingContext.PrintMarginParametersSchema>,"orientation":z.ZodOptional<z.ZodDefault<z.ZodEnum<["portrait","landscape",]>>>,"page":z.ZodOptional<typeof BrowsingContext.PrintPageParametersSchema>,"pageRanges":z.ZodOptional<z.ZodArray<z.ZodUnion<[typeof JsUintSchema,z.ZodString]>>>,"scale":z.ZodOptional<z.ZodDefault<z.ZodNumber>>,"shrinkToFit":z.ZodOptional<z.ZodDefault<z.ZodBoolean>>}>> = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"background":z.boolean().default(false).optional(),"margin":BrowsingContext.PrintMarginParametersSchema.optional(),"orientation":z.enum(["portrait","landscape",]).default("portrait").optional(),"page":BrowsingContext.PrintPageParametersSchema.optional(),"pageRanges":z.array(z.union([JsUintSchema,z.string()])).optional(),"scale":z.number().gte(0.1).lte(2).default(1).optional(),"shrinkToFit":z.boolean().default(true).optional()}));
 }
 export namespace BrowsingContext {
@@ -399,7 +399,7 @@ SetViewportSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace BrowsingContext {
 export const SetViewportParametersSchema: z.ZodLazy<z.ZodObject<{
-"context":typeof BrowsingContext.BrowsingContextSchema,"viewport":z.ZodOptional<z.ZodUnion<readonly [typeof BrowsingContext.ViewportSchema,z.ZodNull]>>,"devicePixelRatio":z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber,z.ZodNull]>>}>> = z.lazy(() => z.object({
+"context":typeof BrowsingContext.BrowsingContextSchema,"viewport":z.ZodOptional<z.ZodUnion<[typeof BrowsingContext.ViewportSchema,z.ZodNull]>>,"devicePixelRatio":z.ZodOptional<z.ZodUnion<[z.ZodNumber,z.ZodNull]>>}>> = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"viewport":z.union([BrowsingContext.ViewportSchema,z.null()]).optional(),"devicePixelRatio":z.union([z.number().gt(0),z.null()]).optional()}));
 }
 export namespace BrowsingContext {
@@ -496,15 +496,15 @@ UserPromptOpenedSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace BrowsingContext {
 export const UserPromptOpenedParametersSchema: z.ZodLazy<z.ZodObject<{
-"context":typeof BrowsingContext.BrowsingContextSchema,"type":z.ZodEnum<{"alert":"alert","confirm":"confirm","prompt":"prompt","beforeunload":"beforeunload",}>,"message":z.ZodString,"defaultValue":z.ZodOptional<z.ZodString>}>> = z.lazy(() => z.object({
+"context":typeof BrowsingContext.BrowsingContextSchema,"type":z.ZodEnum<["alert","confirm","prompt","beforeunload",]>,"message":z.ZodString,"defaultValue":z.ZodOptional<z.ZodString>}>> = z.lazy(() => z.object({
 "context":BrowsingContext.BrowsingContextSchema,"type":z.enum(["alert","confirm","prompt","beforeunload",]),"message":z.string(),"defaultValue":z.string().optional()}));
 }
 export const 
-NetworkCommandSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Network.AddInterceptSchema,typeof Network.ContinueRequestSchema,typeof Network.ContinueResponseSchema,typeof Network.ContinueWithAuthSchema,typeof Network.FailRequestSchema,typeof Network.ProvideResponseSchema,typeof Network.RemoveInterceptSchema]>> = z.lazy(() => z.union([Network.AddInterceptSchema,Network.ContinueRequestSchema,Network.ContinueResponseSchema,Network.ContinueWithAuthSchema,Network.FailRequestSchema,Network.ProvideResponseSchema,Network.RemoveInterceptSchema]));
+NetworkCommandSchema: z.ZodLazy<z.ZodUnion<[typeof Network.AddInterceptSchema,typeof Network.ContinueRequestSchema,typeof Network.ContinueResponseSchema,typeof Network.ContinueWithAuthSchema,typeof Network.FailRequestSchema,typeof Network.ProvideResponseSchema,typeof Network.RemoveInterceptSchema]>> = z.lazy(() => z.union([Network.AddInterceptSchema,Network.ContinueRequestSchema,Network.ContinueResponseSchema,Network.ContinueWithAuthSchema,Network.FailRequestSchema,Network.ProvideResponseSchema,Network.RemoveInterceptSchema]));
 export const 
 NetworkResultSchema: z.ZodLazy<typeof Network.AddInterceptResultSchema> = z.lazy(() => Network.AddInterceptResultSchema);
 export const 
-NetworkEventSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Network.AuthRequiredSchema,typeof Network.BeforeRequestSentSchema,typeof Network.FetchErrorSchema,typeof Network.ResponseCompletedSchema,typeof Network.ResponseStartedSchema]>> = z.lazy(() => z.union([Network.AuthRequiredSchema,Network.BeforeRequestSentSchema,Network.FetchErrorSchema,Network.ResponseCompletedSchema,Network.ResponseStartedSchema]));
+NetworkEventSchema: z.ZodLazy<z.ZodUnion<[typeof Network.AuthRequiredSchema,typeof Network.BeforeRequestSentSchema,typeof Network.FetchErrorSchema,typeof Network.ResponseCompletedSchema,typeof Network.ResponseStartedSchema]>> = z.lazy(() => z.union([Network.AuthRequiredSchema,Network.BeforeRequestSentSchema,Network.FetchErrorSchema,Network.ResponseCompletedSchema,Network.ResponseStartedSchema]));
 export namespace Network {
 export const AuthChallengeSchema: z.ZodLazy<z.ZodObject<{
 "scheme":z.ZodString,"realm":z.ZodString}>> = z.lazy(() => z.object({
@@ -518,11 +518,11 @@ export const AuthCredentialsSchema: z.ZodLazy<z.ZodObject<{
 export namespace Network {
 export const 
 BaseParametersSchema: z.ZodLazy<z.ZodObject<{
-"context":z.ZodUnion<readonly [typeof BrowsingContext.BrowsingContextSchema,z.ZodNull]>,"isBlocked":z.ZodBoolean,"navigation":z.ZodUnion<readonly [typeof BrowsingContext.NavigationSchema,z.ZodNull]>,"redirectCount":typeof JsUintSchema,"request":typeof Network.RequestDataSchema,"timestamp":typeof JsUintSchema,"intercepts":z.ZodOptional<z.ZodArray<typeof Network.InterceptSchema>>}>> = z.lazy(() => z.object({
+"context":z.ZodUnion<[typeof BrowsingContext.BrowsingContextSchema,z.ZodNull]>,"isBlocked":z.ZodBoolean,"navigation":z.ZodUnion<[typeof BrowsingContext.NavigationSchema,z.ZodNull]>,"redirectCount":typeof JsUintSchema,"request":typeof Network.RequestDataSchema,"timestamp":typeof JsUintSchema,"intercepts":z.ZodOptional<z.ZodArray<typeof Network.InterceptSchema, "atleastone">>}>> = z.lazy(() => z.object({
 "context":z.union([BrowsingContext.BrowsingContextSchema,z.null()]),"isBlocked":z.boolean(),"navigation":z.union([BrowsingContext.NavigationSchema,z.null()]),"redirectCount":JsUintSchema,"request":Network.RequestDataSchema,"timestamp":JsUintSchema,"intercepts":z.array(Network.InterceptSchema).nonempty().optional()}));
 }
 export namespace Network {
-export const BytesValueSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Network.StringValueSchema,typeof Network.Base64ValueSchema]>> = z.lazy(() => z.union([Network.StringValueSchema,Network.Base64ValueSchema]));
+export const BytesValueSchema: z.ZodLazy<z.ZodUnion<[typeof Network.StringValueSchema,typeof Network.Base64ValueSchema]>> = z.lazy(() => z.union([Network.StringValueSchema,Network.Base64ValueSchema]));
 }
 export namespace Network {
 export const StringValueSchema: z.ZodLazy<z.ZodObject<{
@@ -536,7 +536,7 @@ export const Base64ValueSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace Network {
 export const CookieSchema: z.ZodLazy<z.ZodObject<{
-"name":z.ZodString,"value":typeof Network.BytesValueSchema,"domain":z.ZodString,"path":z.ZodString,"size":typeof JsUintSchema,"httpOnly":z.ZodBoolean,"secure":z.ZodBoolean,"sameSite":z.ZodEnum<{"strict":"strict","lax":"lax","none":"none",}>,"expires":z.ZodOptional<typeof JsUintSchema>}>> = z.lazy(() => z.object({
+"name":z.ZodString,"value":typeof Network.BytesValueSchema,"domain":z.ZodString,"path":z.ZodString,"size":typeof JsUintSchema,"httpOnly":z.ZodBoolean,"secure":z.ZodBoolean,"sameSite":z.ZodEnum<["strict","lax","none",]>,"expires":z.ZodOptional<typeof JsUintSchema>}>> = z.lazy(() => z.object({
 "name":z.string(),"value":Network.BytesValueSchema,"domain":z.string(),"path":z.string(),"size":JsUintSchema,"httpOnly":z.boolean(),"secure":z.boolean(),"sameSite":z.enum(["strict","lax","none",]),"expires":JsUintSchema.optional()}));
 }
 export namespace Network {
@@ -556,7 +556,7 @@ export const HeaderSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace Network {
 export const InitiatorSchema: z.ZodLazy<z.ZodObject<{
-"type":z.ZodEnum<{"parser":"parser","script":"script","preflight":"preflight","other":"other",}>,"columnNumber":z.ZodOptional<typeof JsUintSchema>,"lineNumber":z.ZodOptional<typeof JsUintSchema>,"stackTrace":z.ZodOptional<typeof Script.StackTraceSchema>,"request":z.ZodOptional<typeof Network.RequestSchema>}>> = z.lazy(() => z.object({
+"type":z.ZodEnum<["parser","script","preflight","other",]>,"columnNumber":z.ZodOptional<typeof JsUintSchema>,"lineNumber":z.ZodOptional<typeof JsUintSchema>,"stackTrace":z.ZodOptional<typeof Script.StackTraceSchema>,"request":z.ZodOptional<typeof Network.RequestSchema>}>> = z.lazy(() => z.object({
 "type":z.enum(["parser","script","preflight","other",]),"columnNumber":JsUintSchema.optional(),"lineNumber":JsUintSchema.optional(),"stackTrace":Script.StackTraceSchema.optional(),"request":Network.RequestSchema.optional()}));
 }
 export namespace Network {
@@ -567,7 +567,7 @@ export const RequestSchema: z.ZodLazy<z.ZodString> = z.lazy(() => z.string());
 }
 export namespace Network {
 export const RequestDataSchema: z.ZodLazy<z.ZodObject<{
-"request":typeof Network.RequestSchema,"url":z.ZodString,"method":z.ZodString,"headers":z.ZodArray<typeof Network.HeaderSchema>,"cookies":z.ZodArray<typeof Network.CookieSchema>,"headersSize":typeof JsUintSchema,"bodySize":z.ZodUnion<readonly [typeof JsUintSchema,z.ZodNull]>,"timings":typeof Network.FetchTimingInfoSchema}>> = z.lazy(() => z.object({
+"request":typeof Network.RequestSchema,"url":z.ZodString,"method":z.ZodString,"headers":z.ZodArray<typeof Network.HeaderSchema>,"cookies":z.ZodArray<typeof Network.CookieSchema>,"headersSize":typeof JsUintSchema,"bodySize":z.ZodUnion<[typeof JsUintSchema,z.ZodNull]>,"timings":typeof Network.FetchTimingInfoSchema}>> = z.lazy(() => z.object({
 "request":Network.RequestSchema,"url":z.string(),"method":z.string(),"headers":z.array(Network.HeaderSchema),"cookies":z.array(Network.CookieSchema),"headersSize":JsUintSchema,"bodySize":z.union([JsUintSchema,z.null()]),"timings":Network.FetchTimingInfoSchema}));
 }
 export namespace Network {
@@ -577,16 +577,16 @@ export const ResponseContentSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace Network {
 export const ResponseDataSchema: z.ZodLazy<z.ZodObject<{
-"url":z.ZodString,"protocol":z.ZodString,"status":typeof JsUintSchema,"statusText":z.ZodString,"fromCache":z.ZodBoolean,"headers":z.ZodArray<typeof Network.HeaderSchema>,"mimeType":z.ZodString,"bytesReceived":typeof JsUintSchema,"headersSize":z.ZodUnion<readonly [typeof JsUintSchema,z.ZodNull]>,"bodySize":z.ZodUnion<readonly [typeof JsUintSchema,z.ZodNull]>,"content":typeof Network.ResponseContentSchema,"authChallenge":z.ZodOptional<typeof Network.AuthChallengeSchema>}>> = z.lazy(() => z.object({
+"url":z.ZodString,"protocol":z.ZodString,"status":typeof JsUintSchema,"statusText":z.ZodString,"fromCache":z.ZodBoolean,"headers":z.ZodArray<typeof Network.HeaderSchema>,"mimeType":z.ZodString,"bytesReceived":typeof JsUintSchema,"headersSize":z.ZodUnion<[typeof JsUintSchema,z.ZodNull]>,"bodySize":z.ZodUnion<[typeof JsUintSchema,z.ZodNull]>,"content":typeof Network.ResponseContentSchema,"authChallenge":z.ZodOptional<typeof Network.AuthChallengeSchema>}>> = z.lazy(() => z.object({
 "url":z.string(),"protocol":z.string(),"status":JsUintSchema,"statusText":z.string(),"fromCache":z.boolean(),"headers":z.array(Network.HeaderSchema),"mimeType":z.string(),"bytesReceived":JsUintSchema,"headersSize":z.union([JsUintSchema,z.null()]),"bodySize":z.union([JsUintSchema,z.null()]),"content":Network.ResponseContentSchema,"authChallenge":Network.AuthChallengeSchema.optional()}));
 }
 export namespace Network {
 export const SetCookieHeaderSchema: z.ZodLazy<z.ZodObject<{
-"name":z.ZodString,"value":typeof Network.BytesValueSchema,"domain":z.ZodOptional<z.ZodString>,"httpOnly":z.ZodOptional<z.ZodBoolean>,"expires":z.ZodOptional<z.ZodString>,"maxAge":z.ZodOptional<typeof JsIntSchema>,"path":z.ZodOptional<z.ZodString>,"sameSite":z.ZodOptional<z.ZodEnum<{"strict":"strict","lax":"lax","none":"none",}>>,"secure":z.ZodOptional<z.ZodBoolean>}>> = z.lazy(() => z.object({
+"name":z.ZodString,"value":typeof Network.BytesValueSchema,"domain":z.ZodOptional<z.ZodString>,"httpOnly":z.ZodOptional<z.ZodBoolean>,"expires":z.ZodOptional<z.ZodString>,"maxAge":z.ZodOptional<typeof JsIntSchema>,"path":z.ZodOptional<z.ZodString>,"sameSite":z.ZodOptional<z.ZodEnum<["strict","lax","none",]>>,"secure":z.ZodOptional<z.ZodBoolean>}>> = z.lazy(() => z.object({
 "name":z.string(),"value":Network.BytesValueSchema,"domain":z.string().optional(),"httpOnly":z.boolean().optional(),"expires":z.string().optional(),"maxAge":JsIntSchema.optional(),"path":z.string().optional(),"sameSite":z.enum(["strict","lax","none",]).optional(),"secure":z.boolean().optional()}));
 }
 export namespace Network {
-export const UrlPatternSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Network.UrlPatternPatternSchema,typeof Network.UrlPatternStringSchema]>> = z.lazy(() => z.union([Network.UrlPatternPatternSchema,Network.UrlPatternStringSchema]));
+export const UrlPatternSchema: z.ZodLazy<z.ZodUnion<[typeof Network.UrlPatternPatternSchema,typeof Network.UrlPatternStringSchema]>> = z.lazy(() => z.union([Network.UrlPatternPatternSchema,Network.UrlPatternStringSchema]));
 }
 export namespace Network {
 export const UrlPatternPatternSchema: z.ZodLazy<z.ZodObject<{
@@ -606,11 +606,11 @@ AddInterceptSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace Network {
 export const AddInterceptParametersSchema: z.ZodLazy<z.ZodObject<{
-"phases":z.ZodArray<typeof Network.InterceptPhaseSchema>,"urlPatterns":z.ZodOptional<z.ZodArray<typeof Network.UrlPatternSchema>>}>> = z.lazy(() => z.object({
+"phases":z.ZodArray<typeof Network.InterceptPhaseSchema, "atleastone">,"urlPatterns":z.ZodOptional<z.ZodArray<typeof Network.UrlPatternSchema>>}>> = z.lazy(() => z.object({
 "phases":z.array(Network.InterceptPhaseSchema).nonempty(),"urlPatterns":z.array(Network.UrlPatternSchema).optional()}));
 }
 export namespace Network {
-export const InterceptPhaseSchema: z.ZodLazy<z.ZodEnum<{"beforeRequestSent":"beforeRequestSent","responseStarted":"responseStarted","authRequired":"authRequired",}>> = z.lazy(() => z.enum(["beforeRequestSent","responseStarted","authRequired",]));
+export const InterceptPhaseSchema: z.ZodLazy<z.ZodEnum<["beforeRequestSent","responseStarted","authRequired",]>> = z.lazy(() => z.enum(["beforeRequestSent","responseStarted","authRequired",]));
 }
 export namespace Network {
 export const AddInterceptResultSchema: z.ZodLazy<z.ZodObject<{
@@ -647,7 +647,7 @@ ContinueWithAuthSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace Network {
 export const ContinueWithAuthParametersSchema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
-"request":typeof Network.RequestSchema}>,z.ZodUnion<readonly [typeof Network.ContinueWithAuthCredentialsSchema,typeof Network.ContinueWithAuthNoCredentialsSchema]>>> = z.lazy(() => z.object({
+"request":typeof Network.RequestSchema}>,z.ZodUnion<[typeof Network.ContinueWithAuthCredentialsSchema,typeof Network.ContinueWithAuthNoCredentialsSchema]>>> = z.lazy(() => z.object({
 "request":Network.RequestSchema}).and(
 z.union([Network.ContinueWithAuthCredentialsSchema,Network.ContinueWithAuthNoCredentialsSchema]))
 );
@@ -661,7 +661,7 @@ ContinueWithAuthCredentialsSchema: z.ZodLazy<z.ZodObject<{
 export namespace Network {
 export const 
 ContinueWithAuthNoCredentialsSchema: z.ZodLazy<z.ZodObject<{
-"action":z.ZodEnum<{"default":"default","cancel":"cancel",}>}>> = z.lazy(() => z.object({
+"action":z.ZodEnum<["default","cancel",]>}>> = z.lazy(() => z.object({
 "action":z.enum(["default","cancel",])}));
 }
 export namespace Network {
@@ -763,10 +763,10 @@ z.object({
 );
 }
 export const 
-ScriptCommandSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.AddPreloadScriptSchema,typeof Script.CallFunctionSchema,typeof Script.DisownSchema,typeof Script.EvaluateSchema,typeof Script.GetRealmsSchema,typeof Script.RemovePreloadScriptSchema]>> = z.lazy(() => z.union([Script.AddPreloadScriptSchema,Script.CallFunctionSchema,Script.DisownSchema,Script.EvaluateSchema,Script.GetRealmsSchema,Script.RemovePreloadScriptSchema]));
-export const ScriptResultSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.AddPreloadScriptResultSchema,typeof Script.EvaluateResultSchema,typeof Script.GetRealmsResultSchema]>> = z.lazy(() => z.union([Script.AddPreloadScriptResultSchema,Script.EvaluateResultSchema,Script.GetRealmsResultSchema]));
+ScriptCommandSchema: z.ZodLazy<z.ZodUnion<[typeof Script.AddPreloadScriptSchema,typeof Script.CallFunctionSchema,typeof Script.DisownSchema,typeof Script.EvaluateSchema,typeof Script.GetRealmsSchema,typeof Script.RemovePreloadScriptSchema]>> = z.lazy(() => z.union([Script.AddPreloadScriptSchema,Script.CallFunctionSchema,Script.DisownSchema,Script.EvaluateSchema,Script.GetRealmsSchema,Script.RemovePreloadScriptSchema]));
+export const ScriptResultSchema: z.ZodLazy<z.ZodUnion<[typeof Script.AddPreloadScriptResultSchema,typeof Script.EvaluateResultSchema,typeof Script.GetRealmsResultSchema]>> = z.lazy(() => z.union([Script.AddPreloadScriptResultSchema,Script.EvaluateResultSchema,Script.GetRealmsResultSchema]));
 export const 
-ScriptEventSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.MessageSchema,typeof Script.RealmCreatedSchema,typeof Script.RealmDestroyedSchema]>> = z.lazy(() => z.union([Script.MessageSchema,Script.RealmCreatedSchema,Script.RealmDestroyedSchema]));
+ScriptEventSchema: z.ZodLazy<z.ZodUnion<[typeof Script.MessageSchema,typeof Script.RealmCreatedSchema,typeof Script.RealmDestroyedSchema]>> = z.lazy(() => z.union([Script.MessageSchema,Script.RealmCreatedSchema,Script.RealmDestroyedSchema]));
 export namespace Script {
 export const ChannelSchema: z.ZodLazy<z.ZodString> = z.lazy(() => z.string());
 }
@@ -781,7 +781,7 @@ export const ChannelPropertiesSchema: z.ZodLazy<z.ZodObject<{
 "channel":Script.ChannelSchema,"serializationOptions":Script.SerializationOptionsSchema.optional(),"ownership":Script.ResultOwnershipSchema.optional()}));
 }
 export namespace Script {
-export const EvaluateResultSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.EvaluateResultSuccessSchema,typeof Script.EvaluateResultExceptionSchema]>> = z.lazy(() => z.union([Script.EvaluateResultSuccessSchema,Script.EvaluateResultExceptionSchema]));
+export const EvaluateResultSchema: z.ZodLazy<z.ZodUnion<[typeof Script.EvaluateResultSuccessSchema,typeof Script.EvaluateResultExceptionSchema]>> = z.lazy(() => z.union([Script.EvaluateResultSuccessSchema,Script.EvaluateResultExceptionSchema]));
 }
 export namespace Script {
 export const EvaluateResultSuccessSchema: z.ZodLazy<z.ZodObject<{
@@ -822,7 +822,7 @@ export const DateLocalValueSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace Script {
 export const MappingLocalValueSchema: z.ZodLazy<z.ZodArray<z.ZodTuple<[
-z.ZodUnion<readonly [typeof Script.LocalValueSchema,z.ZodString]>,typeof Script.LocalValueSchema], null>>> = z.lazy(() => z.array(z.tuple([
+z.ZodUnion<[typeof Script.LocalValueSchema,z.ZodString]>,typeof Script.LocalValueSchema], null>>> = z.lazy(() => z.array(z.tuple([
 z.union([Script.LocalValueSchema,z.string()]),Script.LocalValueSchema])));
 }
 export namespace Script {
@@ -857,7 +857,7 @@ export namespace Script {
 export const RealmSchema: z.ZodLazy<z.ZodString> = z.lazy(() => z.string());
 }
 export namespace Script {
-export const PrimitiveProtocolValueSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.UndefinedValueSchema,typeof Script.NullValueSchema,typeof Script.StringValueSchema,typeof Script.NumberValueSchema,typeof Script.BooleanValueSchema,typeof Script.BigIntValueSchema]>> = z.lazy(() => z.union([Script.UndefinedValueSchema,Script.NullValueSchema,Script.StringValueSchema,Script.NumberValueSchema,Script.BooleanValueSchema,Script.BigIntValueSchema]));
+export const PrimitiveProtocolValueSchema: z.ZodLazy<z.ZodUnion<[typeof Script.UndefinedValueSchema,typeof Script.NullValueSchema,typeof Script.StringValueSchema,typeof Script.NumberValueSchema,typeof Script.BooleanValueSchema,typeof Script.BigIntValueSchema]>> = z.lazy(() => z.union([Script.UndefinedValueSchema,Script.NullValueSchema,Script.StringValueSchema,Script.NumberValueSchema,Script.BooleanValueSchema,Script.BigIntValueSchema]));
 }
 export namespace Script {
 export const UndefinedValueSchema: z.ZodLazy<z.ZodObject<{
@@ -875,11 +875,11 @@ export const StringValueSchema: z.ZodLazy<z.ZodObject<{
 "type":z.literal("string"),"value":z.string()}));
 }
 export namespace Script {
-export const SpecialNumberSchema: z.ZodLazy<z.ZodEnum<{"NaN":"NaN","-0":"-0","Infinity":"Infinity","-Infinity":"-Infinity",}>> = z.lazy(() => z.enum(["NaN","-0","Infinity","-Infinity",]));
+export const SpecialNumberSchema: z.ZodLazy<z.ZodEnum<["NaN","-0","Infinity","-Infinity",]>> = z.lazy(() => z.enum(["NaN","-0","Infinity","-Infinity",]));
 }
 export namespace Script {
 export const NumberValueSchema: z.ZodLazy<z.ZodObject<{
-"type":z.ZodLiteral<"number">,"value":z.ZodUnion<readonly [z.ZodNumber,typeof Script.SpecialNumberSchema]>}>> = z.lazy(() => z.object({
+"type":z.ZodLiteral<"number">,"value":z.ZodUnion<[z.ZodNumber,typeof Script.SpecialNumberSchema]>}>> = z.lazy(() => z.object({
 "type":z.literal("number"),"value":z.union([z.number(),Script.SpecialNumberSchema])}));
 }
 export namespace Script {
@@ -893,7 +893,7 @@ export const BigIntValueSchema: z.ZodLazy<z.ZodObject<{
 "type":z.literal("bigint"),"value":z.string()}));
 }
 export namespace Script {
-export const RealmInfoSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.WindowRealmInfoSchema,typeof Script.DedicatedWorkerRealmInfoSchema,typeof Script.SharedWorkerRealmInfoSchema,typeof Script.ServiceWorkerRealmInfoSchema,typeof Script.WorkerRealmInfoSchema,typeof Script.PaintWorkletRealmInfoSchema,typeof Script.AudioWorkletRealmInfoSchema,typeof Script.WorkletRealmInfoSchema]>> = z.lazy(() => z.union([Script.WindowRealmInfoSchema,Script.DedicatedWorkerRealmInfoSchema,Script.SharedWorkerRealmInfoSchema,Script.ServiceWorkerRealmInfoSchema,Script.WorkerRealmInfoSchema,Script.PaintWorkletRealmInfoSchema,Script.AudioWorkletRealmInfoSchema,Script.WorkletRealmInfoSchema]));
+export const RealmInfoSchema: z.ZodLazy<z.ZodUnion<[typeof Script.WindowRealmInfoSchema,typeof Script.DedicatedWorkerRealmInfoSchema,typeof Script.SharedWorkerRealmInfoSchema,typeof Script.ServiceWorkerRealmInfoSchema,typeof Script.WorkerRealmInfoSchema,typeof Script.PaintWorkletRealmInfoSchema,typeof Script.AudioWorkletRealmInfoSchema,typeof Script.WorkletRealmInfoSchema]>> = z.lazy(() => z.union([Script.WindowRealmInfoSchema,Script.DedicatedWorkerRealmInfoSchema,Script.SharedWorkerRealmInfoSchema,Script.ServiceWorkerRealmInfoSchema,Script.WorkerRealmInfoSchema,Script.PaintWorkletRealmInfoSchema,Script.AudioWorkletRealmInfoSchema,Script.WorkletRealmInfoSchema]));
 }
 export namespace Script {
 export const 
@@ -958,10 +958,10 @@ z.object({
 );
 }
 export namespace Script {
-export const RealmTypeSchema: z.ZodLazy<z.ZodEnum<{"window":"window","dedicated-worker":"dedicated-worker","shared-worker":"shared-worker","service-worker":"service-worker","worker":"worker","paint-worklet":"paint-worklet","audio-worklet":"audio-worklet","worklet":"worklet",}>> = z.lazy(() => z.enum(["window","dedicated-worker","shared-worker","service-worker","worker","paint-worklet","audio-worklet","worklet",]));
+export const RealmTypeSchema: z.ZodLazy<z.ZodEnum<["window","dedicated-worker","shared-worker","service-worker","worker","paint-worklet","audio-worklet","worklet",]>> = z.lazy(() => z.enum(["window","dedicated-worker","shared-worker","service-worker","worker","paint-worklet","audio-worklet","worklet",]));
 }
 export namespace Script {
-export const RemoteReferenceSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.SharedReferenceSchema,typeof Script.RemoteObjectReferenceSchema]>> = z.lazy(() => z.union([Script.SharedReferenceSchema,Script.RemoteObjectReferenceSchema]));
+export const RemoteReferenceSchema: z.ZodLazy<z.ZodUnion<[typeof Script.SharedReferenceSchema,typeof Script.RemoteObjectReferenceSchema]>> = z.lazy(() => z.union([Script.SharedReferenceSchema,Script.RemoteObjectReferenceSchema]));
 }
 export namespace Script {
 export const SharedReferenceSchema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
@@ -985,7 +985,7 @@ export const ListRemoteValueSchema: z.ZodLazy<z.ZodArray<typeof Script.RemoteVal
 }
 export namespace Script {
 export const MappingRemoteValueSchema: z.ZodLazy<z.ZodArray<z.ZodTuple<[
-z.ZodUnion<readonly [typeof Script.RemoteValueSchema,z.ZodString]>,typeof Script.RemoteValueSchema], null>>> = z.lazy(() => z.array(z.tuple([
+z.ZodUnion<[typeof Script.RemoteValueSchema,z.ZodString]>,typeof Script.RemoteValueSchema], null>>> = z.lazy(() => z.array(z.tuple([
 z.union([Script.RemoteValueSchema,z.string()]),Script.RemoteValueSchema])));
 }
 export namespace Script {
@@ -1090,7 +1090,7 @@ export const NodeRemoteValueSchema: z.ZodType = z.lazy(() => z.object({
 export namespace Script {
 export const NodePropertiesSchema: z.ZodLazy<z.ZodObject<{
 "nodeType":typeof JsUintSchema,"childNodeCount":typeof JsUintSchema,"attributes":z.ZodOptional<z.ZodRecord<
-z.ZodString,z.ZodString>>,"children":z.ZodOptional<z.ZodArray<typeof Script.NodeRemoteValueSchema>>,"localName":z.ZodOptional<z.ZodString>,"mode":z.ZodOptional<z.ZodEnum<{"open":"open","closed":"closed",}>>,"namespaceURI":z.ZodOptional<z.ZodString>,"nodeValue":z.ZodOptional<z.ZodString>,"shadowRoot":z.ZodOptional<z.ZodUnion<readonly [typeof Script.NodeRemoteValueSchema,z.ZodNull]>>}>> = z.lazy(() => z.object({
+z.ZodString,z.ZodString>>,"children":z.ZodOptional<z.ZodArray<typeof Script.NodeRemoteValueSchema>>,"localName":z.ZodOptional<z.ZodString>,"mode":z.ZodOptional<z.ZodEnum<["open","closed",]>>,"namespaceURI":z.ZodOptional<z.ZodString>,"nodeValue":z.ZodOptional<z.ZodString>,"shadowRoot":z.ZodOptional<z.ZodUnion<[typeof Script.NodeRemoteValueSchema,z.ZodNull]>>}>> = z.lazy(() => z.object({
 "nodeType":JsUintSchema,"childNodeCount":JsUintSchema,"attributes":z.record(
 z.string(),z.string()).optional(),"children":z.array(Script.NodeRemoteValueSchema).optional(),"localName":z.string().optional(),"mode":z.enum(["open","closed",]).optional(),"namespaceURI":z.string().optional(),"nodeValue":z.string().optional(),"shadowRoot":z.union([Script.NodeRemoteValueSchema,z.null()]).optional()}));
 }
@@ -1105,11 +1105,11 @@ export const WindowProxyPropertiesSchema: z.ZodLazy<z.ZodObject<{
 "context":BrowsingContext.BrowsingContextSchema}));
 }
 export namespace Script {
-export const ResultOwnershipSchema: z.ZodLazy<z.ZodEnum<{"root":"root","none":"none",}>> = z.lazy(() => z.enum(["root","none",]));
+export const ResultOwnershipSchema: z.ZodLazy<z.ZodEnum<["root","none",]>> = z.lazy(() => z.enum(["root","none",]));
 }
 export namespace Script {
 export const SerializationOptionsSchema: z.ZodLazy<z.ZodObject<{
-"maxDomDepth":z.ZodOptional<z.ZodDefault<z.ZodUnion<readonly [typeof JsUintSchema,z.ZodNull]>>>,"maxObjectDepth":z.ZodOptional<z.ZodDefault<z.ZodUnion<readonly [typeof JsUintSchema,z.ZodNull]>>>,"includeShadowTree":z.ZodOptional<z.ZodDefault<z.ZodEnum<{"none":"none","open":"open","all":"all",}>>>}>> = z.lazy(() => z.object({
+"maxDomDepth":z.ZodOptional<z.ZodDefault<z.ZodUnion<[typeof JsUintSchema,z.ZodNull]>>>,"maxObjectDepth":z.ZodOptional<z.ZodDefault<z.ZodUnion<[typeof JsUintSchema,z.ZodNull]>>>,"includeShadowTree":z.ZodOptional<z.ZodDefault<z.ZodEnum<["none","open","all",]>>>}>> = z.lazy(() => z.object({
 "maxDomDepth":z.union([JsUintSchema,z.null()]).default(0).optional(),"maxObjectDepth":z.union([JsUintSchema,z.null()]).default(null).optional(),"includeShadowTree":z.enum(["none","open","all",]).default("none").optional()}));
 }
 export namespace Script {
@@ -1141,7 +1141,7 @@ export const ContextTargetSchema: z.ZodLazy<z.ZodObject<{
 "context":BrowsingContext.BrowsingContextSchema,"sandbox":z.string().optional()}));
 }
 export namespace Script {
-export const TargetSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Script.RealmTargetSchema,typeof Script.ContextTargetSchema]>> = z.lazy(() => z.union([Script.RealmTargetSchema,Script.ContextTargetSchema]));
+export const TargetSchema: z.ZodLazy<z.ZodUnion<[typeof Script.RealmTargetSchema,typeof Script.ContextTargetSchema]>> = z.lazy(() => z.union([Script.RealmTargetSchema,Script.ContextTargetSchema]));
 }
 export namespace Script {
 export const 
@@ -1151,7 +1151,7 @@ AddPreloadScriptSchema: z.ZodLazy<z.ZodObject<{
 }
 export namespace Script {
 export const AddPreloadScriptParametersSchema: z.ZodLazy<z.ZodObject<{
-"functionDeclaration":z.ZodString,"arguments":z.ZodOptional<z.ZodArray<typeof Script.ChannelValueSchema>>,"contexts":z.ZodOptional<z.ZodArray<typeof BrowsingContext.BrowsingContextSchema>>,"sandbox":z.ZodOptional<z.ZodString>}>> = z.lazy(() => z.object({
+"functionDeclaration":z.ZodString,"arguments":z.ZodOptional<z.ZodArray<typeof Script.ChannelValueSchema>>,"contexts":z.ZodOptional<z.ZodArray<typeof BrowsingContext.BrowsingContextSchema, "atleastone">>,"sandbox":z.ZodOptional<z.ZodString>}>> = z.lazy(() => z.object({
 "functionDeclaration":z.string(),"arguments":z.array(Script.ChannelValueSchema).optional(),"contexts":z.array(BrowsingContext.BrowsingContextSchema).nonempty().optional(),"sandbox":z.string().optional()}));
 }
 export namespace Script {
@@ -1250,15 +1250,15 @@ export const RealmDestroyedParametersSchema: z.ZodLazy<z.ZodObject<{
 export const 
 LogEventSchema: z.ZodLazy<typeof Log.EntryAddedSchema> = z.lazy(() => Log.EntryAddedSchema);
 export namespace Log {
-export const LevelSchema: z.ZodLazy<z.ZodEnum<{"debug":"debug","info":"info","warn":"warn","error":"error",}>> = z.lazy(() => z.enum(["debug","info","warn","error",]));
+export const LevelSchema: z.ZodLazy<z.ZodEnum<["debug","info","warn","error",]>> = z.lazy(() => z.enum(["debug","info","warn","error",]));
 }
 export namespace Log {
-export const EntrySchema: z.ZodLazy<z.ZodUnion<readonly [typeof Log.GenericLogEntrySchema,typeof Log.ConsoleLogEntrySchema,typeof Log.JavascriptLogEntrySchema]>> = z.lazy(() => z.union([Log.GenericLogEntrySchema,Log.ConsoleLogEntrySchema,Log.JavascriptLogEntrySchema]));
+export const EntrySchema: z.ZodLazy<z.ZodUnion<[typeof Log.GenericLogEntrySchema,typeof Log.ConsoleLogEntrySchema,typeof Log.JavascriptLogEntrySchema]>> = z.lazy(() => z.union([Log.GenericLogEntrySchema,Log.ConsoleLogEntrySchema,Log.JavascriptLogEntrySchema]));
 }
 export namespace Log {
 export const 
 BaseLogEntrySchema: z.ZodLazy<z.ZodObject<{
-"level":typeof Log.LevelSchema,"source":typeof Script.SourceSchema,"text":z.ZodUnion<readonly [z.ZodString,z.ZodNull]>,"timestamp":typeof JsUintSchema,"stackTrace":z.ZodOptional<typeof Script.StackTraceSchema>}>> = z.lazy(() => z.object({
+"level":typeof Log.LevelSchema,"source":typeof Script.SourceSchema,"text":z.ZodUnion<[z.ZodString,z.ZodNull]>,"timestamp":typeof JsUintSchema,"stackTrace":z.ZodOptional<typeof Script.StackTraceSchema>}>> = z.lazy(() => z.object({
 "level":Log.LevelSchema,"source":Script.SourceSchema,"text":z.union([z.string(),z.null()]),"timestamp":JsUintSchema,"stackTrace":Script.StackTraceSchema.optional()}));
 }
 export namespace Log {
@@ -1289,7 +1289,7 @@ EntryAddedSchema: z.ZodLazy<z.ZodObject<{
 "method":z.literal("log.entryAdded"),"params":Log.EntrySchema}));
 }
 export const 
-InputCommandSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Input.PerformActionsSchema,typeof Input.ReleaseActionsSchema]>> = z.lazy(() => z.union([Input.PerformActionsSchema,Input.ReleaseActionsSchema]));
+InputCommandSchema: z.ZodLazy<z.ZodUnion<[typeof Input.PerformActionsSchema,typeof Input.ReleaseActionsSchema]>> = z.lazy(() => z.union([Input.PerformActionsSchema,Input.ReleaseActionsSchema]));
 export namespace Input {
 export const ElementOriginSchema: z.ZodLazy<z.ZodObject<{
 "type":z.ZodLiteral<"element">,"element":typeof Script.SharedReferenceSchema}>> = z.lazy(() => z.object({
@@ -1307,7 +1307,7 @@ export const PerformActionsParametersSchema: z.ZodLazy<z.ZodObject<{
 "context":BrowsingContext.BrowsingContextSchema,"actions":z.array(Input.SourceActionsSchema)}));
 }
 export namespace Input {
-export const SourceActionsSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Input.NoneSourceActionsSchema,typeof Input.KeySourceActionsSchema,typeof Input.PointerSourceActionsSchema,typeof Input.WheelSourceActionsSchema]>> = z.lazy(() => z.union([Input.NoneSourceActionsSchema,Input.KeySourceActionsSchema,Input.PointerSourceActionsSchema,Input.WheelSourceActionsSchema]));
+export const SourceActionsSchema: z.ZodLazy<z.ZodUnion<[typeof Input.NoneSourceActionsSchema,typeof Input.KeySourceActionsSchema,typeof Input.PointerSourceActionsSchema,typeof Input.WheelSourceActionsSchema]>> = z.lazy(() => z.union([Input.NoneSourceActionsSchema,Input.KeySourceActionsSchema,Input.PointerSourceActionsSchema,Input.WheelSourceActionsSchema]));
 }
 export namespace Input {
 export const NoneSourceActionsSchema: z.ZodLazy<z.ZodObject<{
@@ -1323,7 +1323,7 @@ export const KeySourceActionsSchema: z.ZodLazy<z.ZodObject<{
 "type":z.literal("key"),"id":z.string(),"actions":z.array(Input.KeySourceActionSchema)}));
 }
 export namespace Input {
-export const KeySourceActionSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Input.PauseActionSchema,typeof Input.KeyDownActionSchema,typeof Input.KeyUpActionSchema]>> = z.lazy(() => z.union([Input.PauseActionSchema,Input.KeyDownActionSchema,Input.KeyUpActionSchema]));
+export const KeySourceActionSchema: z.ZodLazy<z.ZodUnion<[typeof Input.PauseActionSchema,typeof Input.KeyDownActionSchema,typeof Input.KeyUpActionSchema]>> = z.lazy(() => z.union([Input.PauseActionSchema,Input.KeyDownActionSchema,Input.KeyUpActionSchema]));
 }
 export namespace Input {
 export const PointerSourceActionsSchema: z.ZodLazy<z.ZodObject<{
@@ -1331,7 +1331,7 @@ export const PointerSourceActionsSchema: z.ZodLazy<z.ZodObject<{
 "type":z.literal("pointer"),"id":z.string(),"parameters":Input.PointerParametersSchema.optional(),"actions":z.array(Input.PointerSourceActionSchema)}));
 }
 export namespace Input {
-export const PointerTypeSchema: z.ZodLazy<z.ZodEnum<{"mouse":"mouse","pen":"pen","touch":"touch",}>> = z.lazy(() => z.enum(["mouse","pen","touch",]));
+export const PointerTypeSchema: z.ZodLazy<z.ZodEnum<["mouse","pen","touch",]>> = z.lazy(() => z.enum(["mouse","pen","touch",]));
 }
 export namespace Input {
 export const PointerParametersSchema: z.ZodLazy<z.ZodObject<{
@@ -1339,7 +1339,7 @@ export const PointerParametersSchema: z.ZodLazy<z.ZodObject<{
 "pointerType":Input.PointerTypeSchema.default("mouse").optional()}));
 }
 export namespace Input {
-export const PointerSourceActionSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Input.PauseActionSchema,typeof Input.PointerDownActionSchema,typeof Input.PointerUpActionSchema,typeof Input.PointerMoveActionSchema]>> = z.lazy(() => z.union([Input.PauseActionSchema,Input.PointerDownActionSchema,Input.PointerUpActionSchema,Input.PointerMoveActionSchema]));
+export const PointerSourceActionSchema: z.ZodLazy<z.ZodUnion<[typeof Input.PauseActionSchema,typeof Input.PointerDownActionSchema,typeof Input.PointerUpActionSchema,typeof Input.PointerMoveActionSchema]>> = z.lazy(() => z.union([Input.PauseActionSchema,Input.PointerDownActionSchema,Input.PointerUpActionSchema,Input.PointerMoveActionSchema]));
 }
 export namespace Input {
 export const WheelSourceActionsSchema: z.ZodLazy<z.ZodObject<{
@@ -1347,7 +1347,7 @@ export const WheelSourceActionsSchema: z.ZodLazy<z.ZodObject<{
 "type":z.literal("wheel"),"id":z.string(),"actions":z.array(Input.WheelSourceActionSchema)}));
 }
 export namespace Input {
-export const WheelSourceActionSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Input.PauseActionSchema,typeof Input.WheelScrollActionSchema]>> = z.lazy(() => z.union([Input.PauseActionSchema,Input.WheelScrollActionSchema]));
+export const WheelSourceActionSchema: z.ZodLazy<z.ZodUnion<[typeof Input.PauseActionSchema,typeof Input.WheelScrollActionSchema]>> = z.lazy(() => z.union([Input.PauseActionSchema,Input.WheelScrollActionSchema]));
 }
 export namespace Input {
 export const PauseActionSchema: z.ZodLazy<z.ZodObject<{
@@ -1397,7 +1397,7 @@ PointerCommonPropertiesSchema: z.ZodLazy<z.ZodObject<{
 "width":JsUintSchema.default(1).optional(),"height":JsUintSchema.default(1).optional(),"pressure":z.number().default(0).optional(),"tangentialPressure":z.number().default(0).optional(),"twist":z.number().int().nonnegative().gte(0).lte(359).default(0).optional(),"altitudeAngle":z.number().gte(0).lte(1.5707963267948966).default(0).optional(),"azimuthAngle":z.number().gte(0).lte(6.283185307179586).default(0).optional()}));
 }
 export namespace Input {
-export const OriginSchema: z.ZodLazy<z.ZodUnion<readonly [z.ZodLiteral<"viewport">,z.ZodLiteral<"pointer">,typeof Input.ElementOriginSchema]>> = z.lazy(() => z.union([z.literal("viewport"),z.literal("pointer"),Input.ElementOriginSchema]));
+export const OriginSchema: z.ZodLazy<z.ZodUnion<[z.ZodLiteral<"viewport">,z.ZodLiteral<"pointer">,typeof Input.ElementOriginSchema]>> = z.lazy(() => z.union([z.literal("viewport"),z.literal("pointer"),Input.ElementOriginSchema]));
 }
 export namespace Input {
 export const 
