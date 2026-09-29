@@ -9,7 +9,7 @@ A commandline utility for converting CDDL to various formats.
 ## Usage
 
 1.  Clone this repo and `cd` into it.
-2.  `cargo run -- path/to/file.cddl`
+2.  `cargo run -- [--format <type-script|zod>] path/to/file.cddl`
 
 ## Tips
 
@@ -26,4 +26,4 @@ cargo run -- path/to/file.cddl | prettier --stdin-filepath=$outfile > $outfile
 
 ## Limitations
 
-1.  Only [`TypeScript`](https://www.typescriptlang.org/) and [`Zod v4`](https://zod.dev/) is supported at the moment.
+1.  Only [`TypeScript`](https://www.typescriptlang.org/) (`--format type-script`) and [`Zod v4`](https://zod.dev/) (`--format zod`) are supported at the moment.
