@@ -46,12 +46,6 @@ struct PostambleOptions {
     print_flatten: bool,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub enum Version {
-    V3,
-    V4,
-}
-
 pub struct Engine<Stdout, Stderr>
 where
     Stdout: Write,
@@ -60,7 +54,6 @@ where
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
     is_type_mode: bool,
-    version: Version,
     cyclic_rules: std::collections::HashSet<String>,
     #[allow(dead_code)]
     postamble_options: PostambleOptions,
@@ -85,18 +78,10 @@ fn calculate_occurrence(occur: &Option<cddl::ast::Occurrence<'_>>) -> (usize, us
 
 impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     pub fn with_writers(stdout: Stdout, stderr: Stderr) -> Engine<Stdout, Stderr> {
-        Self::with_writers_and_version(stdout, stderr, Version::V3)
-    }
-    pub fn with_writers_and_version(
-        stdout: Stdout,
-        stderr: Stderr,
-        version: Version,
-    ) -> Engine<Stdout, Stderr> {
         Engine {
             nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
             is_type_mode: false,
-            version,
             cyclic_rules: std::collections::HashSet::new(),
             postamble_options: PostambleOptions {
                 #[cfg(feature = "vector_groups")]
@@ -119,12 +104,6 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             unimplemented!();
         }
     }
-    fn write_zod_union_type_start(&mut self) {
-        match self.version {
-            Version::V3 => write!(self.stdout, "z.ZodUnion<["),
-            Version::V4 => write!(self.stdout, "z.ZodUnion<readonly ["),
-        };
-    }
     fn visit_maybe_enum_type(&mut self, t: &'b cddl::ast::Type<'a>) -> bool {
         // Special case for string enums
         if t.type_choices.len() > 1
@@ -134,26 +113,13 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 .all(|type2| matches!(type2, cddl::ast::Type2::TextValue { .. }))
         {
             if self.is_type_mode {
-                match self.version {
-                    Version::V3 => {
-                        write!(self.stdout, "z.ZodEnum<[");
-                        for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
-                            if let cddl::ast::Type2::TextValue { value, .. } = type2 {
-                                write!(self.stdout, "\"{}\",", value);
-                            }
-                        }
-                        write!(self.stdout, "]>");
-                    }
-                    Version::V4 => {
-                        write!(self.stdout, "z.ZodEnum<{{");
-                        for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
-                            if let cddl::ast::Type2::TextValue { value, .. } = type2 {
-                                write!(self.stdout, "\"{}\":\"{}\",", value, value);
-                            }
-                        }
-                        write!(self.stdout, "}}>");
+                write!(self.stdout, "z.ZodEnum<{{");
+                for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
+                    if let cddl::ast::Type2::TextValue { value, .. } = type2 {
+                        write!(self.stdout, "\"{}\":\"{}\",", value, value);
                     }
                 }
+                write!(self.stdout, "}}>");
             } else {
                 write!(self.stdout, "z.enum([");
                 for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
@@ -171,7 +137,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     fn visit_array(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         if g.group_choices.len() != 1 {
             if self.is_type_mode {
-                self.write_zod_union_type_start();
+                write!(self.stdout, "z.ZodUnion<readonly [");
             } else {
                 write!(self.stdout, "z.union([");
             }
@@ -403,7 +369,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             }
             if upper < MAX_ARRAYS {
                 if self.is_type_mode {
-                    self.write_zod_union_type_start();
+                    write!(self.stdout, "z.ZodUnion<readonly [");
                     for bound in lower..upper + 1 {
                         if bound != 0 {
                             write!(self.stdout, ",");
@@ -438,9 +404,6 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             } else if self.is_type_mode {
                 write!(self.stdout, "z.ZodArray<");
                 self.visit_type(&entry.entry_type)?;
-                if lower == 1 && self.version == Version::V3 {
-                    write!(self.stdout, ", \"atleastone\"");
-                }
                 write!(self.stdout, ">");
             } else {
                 write!(self.stdout, "z.array(");
@@ -631,7 +594,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         }
         if t.type_choices.len() != 1 {
             if self.is_type_mode {
-                self.write_zod_union_type_start();
+                write!(self.stdout, "z.ZodUnion<readonly [");
             } else {
                 write!(self.stdout, "z.union([");
             }
@@ -722,7 +685,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 self.print_group_joiner();
                 if matches!(calculate_occurrence(&ge.occur), (0, max) if max > 0) {
                     if self.is_type_mode {
-                        self.write_zod_union_type_start();
+                        write!(self.stdout, "z.ZodUnion<readonly [");
                         self.visit_type_groupname_entry(ge)?;
                         write!(self.stdout, ",z.ZodObject<{{}}>]>");
                     } else {
@@ -738,7 +701,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 self.print_group_joiner();
                 if matches!(calculate_occurrence(&occur), (0, max) if max > 0) {
                     if self.is_type_mode {
-                        self.write_zod_union_type_start();
+                        write!(self.stdout, "z.ZodUnion<readonly [");
                         self.visit_group(group)?;
                         write!(self.stdout, ",z.ZodObject<{{}}>]>");
                     } else {
@@ -789,7 +752,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     fn visit_group(&mut self, g: &'b cddl::ast::Group<'a>) -> cddl::visitor::Result<Error> {
         if g.group_choices.len() != 1 {
             if self.is_type_mode {
-                self.write_zod_union_type_start();
+                write!(self.stdout, "z.ZodUnion<readonly [");
             } else {
                 write!(self.stdout, "z.union([");
             }
