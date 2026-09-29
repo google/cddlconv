@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/google/cddlconv/compare/cddlconv-v0.1.12...cddlconv-v0.2.0) (2026-09-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* switch to Zod v4 types ([#97](https://github.com/google/cddlconv/issues/97))
+
+### Features
+
+* switch to Zod v4 types ([#97](https://github.com/google/cddlconv/issues/97)) ([716b788](https://github.com/google/cddlconv/commit/716b7889c5697317c929766eded44e2dc6759af1)), refs [#95](https://github.com/google/cddlconv/issues/95)
+
 ## [0.1.12](https://github.com/google/cddlconv/compare/cddlconv-v0.1.11...cddlconv-v0.1.12) (2026-09-21)
 
 
