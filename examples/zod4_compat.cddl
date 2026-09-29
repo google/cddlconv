@@ -1,0 +1,3 @@
+Choice = text / int
+Mode = "decline" / "dedicated-worker" / "-0"
+Events = [+ text]

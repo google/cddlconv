@@ -11,6 +11,14 @@ A commandline utility for converting CDDL to various formats.
 1.  Clone this repo and `cd` into it.
 2.  `cargo run -- path/to/file.cddl`
 
+The default output format is TypeScript. Zod schemas can be generated for either
+major version without changing their runtime schema expressions:
+
+```sh
+cargo run -- path/to/file.cddl --format zod   # Zod v3 type annotations
+cargo run -- path/to/file.cddl --format zod4  # Zod v4 type annotations
+```
+
 ## Tips
 
 ### Formatting output
@@ -26,4 +34,4 @@ cargo run -- path/to/file.cddl | prettier --stdin-filepath=$outfile > $outfile
 
 ## Limitations
 
-1.  Only [`TypeScript`](https://www.typescriptlang.org/) and [`Zod v4`](https://zod.dev/) is supported at the moment.
+1.  Only [`TypeScript`](https://www.typescriptlang.org/) and [`Zod`](https://zod.dev/) (v3 and v4) are supported at the moment.

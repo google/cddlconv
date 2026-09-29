@@ -21,6 +21,7 @@ use std::path::PathBuf;
 enum EngineType {
     TypeScript,
     Zod,
+    Zod4,
 }
 
 /// Simple program to greet a person
@@ -52,6 +53,15 @@ fn main() -> Result<()> {
         EngineType::Zod => {
             let mut engine =
                 cddlconv::engines::zod::Engine::with_writers(std::io::stdout(), std::io::stderr());
+            engine.print_preamble();
+            engine.visit_cddl(&cddl)?;
+            engine.print_postamble();
+        }
+        EngineType::Zod4 => {
+            let mut engine = cddlconv::engines::zod::Engine::with_writers_zod4(
+                std::io::stdout(),
+                std::io::stderr(),
+            );
             engine.print_preamble();
             engine.visit_cddl(&cddl)?;
             engine.print_postamble();
