@@ -471,7 +471,7 @@ export type UserPromptOpenedParameters = (({
 "context":(BrowsingContext.BrowsingContext),"type":("alert"| "confirm"| "prompt"| "beforeunload"),"message":(string),"defaultValue"?:(string)}));
 }
 export type NetworkCommand = (Network.AddIntercept| Network.ContinueRequest| Network.ContinueResponse| Network.ContinueWithAuth| Network.FailRequest| Network.ProvideResponse| Network.RemoveIntercept);
-export type NetworkResult = (Network.AddInterceptResult);
+export type NetworkResult = ((Network.AddInterceptResult));
 export type NetworkEvent = (Network.AuthRequired| Network.BeforeRequestSent| Network.FetchError| Network.ResponseCompleted| Network.ResponseStarted);
 export namespace Network {
 export type AuthChallenge = (({

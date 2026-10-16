@@ -19,7 +19,9 @@ use std::io::Write;
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{
-    escape_js_string, is_enum_value, split_namespaced, to_namespaced, to_pascalcase,
+    array_group_entry_as_type_entry, collect_group_rules, escape_js_string, is_enum_value,
+    is_non_cut_type1_member_key, member_key_literal_value, split_namespaced, to_namespaced,
+    to_pascalcase, type_rule_as_group_rule,
 };
 
 const MAX_ELEMENTS: usize = 1 << 3;
@@ -92,6 +94,7 @@ where
     Stderr: Write,
 {
     in_comment: bool,
+    group_rules: std::collections::HashSet<String>,
     nested_group_choices: Vec<GroupChoiceContext>,
     nested_type1: Vec<Type1Context>,
     #[allow(dead_code)]
@@ -118,6 +121,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     pub fn with_writers(stdout: Stdout, stderr: Stderr) -> Engine<Stdout, Stderr> {
         Engine {
             in_comment: false,
+            group_rules: std::collections::HashSet::new(),
             nested_group_choices: Vec::new(),
             nested_type1: Vec::new(),
             postamble_options: PostambleOptions {
@@ -357,6 +361,9 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
     ) -> cddl::visitor::Result<Error> {
         self.print_group_joiner();
         self.enter_array();
+        if let Some(ge) = array_group_entry_as_type_entry(entry, &self.group_rules) {
+            return self.visit_value_array_member_key_entry(&ge);
+        }
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
                 self.visit_value_array_member_key_entry(ge)?;
@@ -546,7 +553,14 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         };
         Ok(())
     }
+    fn visit_cddl(&mut self, cddl: &'b cddl::ast::CDDL<'a>) -> cddl::visitor::Result<Error> {
+        self.group_rules = collect_group_rules(cddl);
+        cddl::visitor::walk_cddl(self, cddl)
+    }
     fn visit_type_rule(&mut self, tr: &'b cddl::ast::TypeRule<'a>) -> cddl::visitor::Result<Error> {
+        if let Some(gr) = type_rule_as_group_rule(tr, &self.group_rules) {
+            return self.visit_group_rule(&gr);
+        }
         let (namespaces, type_name) = split_namespaced(&tr.name);
         for namespace in &namespaces {
             writeln!(self.stdout, "export namespace {} {{", namespace);
@@ -722,7 +736,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         self.visit_memberkey(&mk)?;
 
         if matches!(calculate_occurrence(&entry.occur), (0, max) if max > 0)
-            && !matches!(&mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. })
+            && !is_non_cut_type1_member_key(&mk)
         {
             write!(self.stdout, "?");
         }
@@ -775,6 +789,20 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         &mut self,
         mk: &'b cddl::ast::MemberKey<'a>,
     ) -> cddl::visitor::Result<Error> {
+        if let Some(value) = member_key_literal_value(mk) {
+            match value {
+                cddl::token::Value::INT(value) => write!(self.stdout, "\"{}\"", value),
+                cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\"", value),
+                cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\"", value),
+                cddl::token::Value::TEXT(value) => {
+                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                }
+                cddl::token::Value::BYTE(value) => {
+                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                }
+            };
+            return Ok(());
+        }
         match mk {
             cddl::ast::MemberKey::Type1 { t1, is_cut, .. } => {
                 write!(self.stdout, "[");
