@@ -19,7 +19,7 @@ use std::io::Write;
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{
-    array_group_entry_as_type_entry, collect_group_rules, is_non_cut_type1_member_key,
+    array_group_entry_as_type_entry, collect_group_rules, is_non_cut_non_literal_member_key,
     member_key_literal_value, split_namespaced, to_namespaced, type_rule_as_group_rule,
 };
 
@@ -739,7 +739,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         ));
         self.visit_memberkey(&mk)?;
         let is_optional = matches!(calculate_occurrence(&entry.occur), (0, max) if max > 0)
-            && !is_non_cut_type1_member_key(&mk);
+            && !is_non_cut_non_literal_member_key(&mk);
         if self.is_type_mode && is_optional {
             write!(self.stdout, "z.ZodOptional<");
         }
@@ -840,16 +840,8 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 self.enter_map();
                 write!(self.stdout, "\"{}\":", &ident);
             }
-            cddl::ast::MemberKey::Value { value, .. } => {
-                self.print_group_joiner();
-                self.enter_map();
-                match value {
-                    cddl::token::Value::INT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\":", value),
-                };
+            cddl::ast::MemberKey::Value { .. } => {
+                unreachable!()
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
                 unimplemented!()

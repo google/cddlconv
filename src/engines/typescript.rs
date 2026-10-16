@@ -20,7 +20,7 @@ use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{
     array_group_entry_as_type_entry, collect_group_rules, is_enum_value,
-    is_non_cut_type1_member_key, member_key_literal_value, split_namespaced, to_namespaced,
+    is_non_cut_non_literal_member_key, member_key_literal_value, split_namespaced, to_namespaced,
     to_pascalcase, type_rule_as_group_rule,
 };
 
@@ -736,7 +736,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         self.visit_memberkey(&mk)?;
 
         if matches!(calculate_occurrence(&entry.occur), (0, max) if max > 0)
-            && !is_non_cut_type1_member_key(&mk)
+            && !is_non_cut_non_literal_member_key(&mk)
         {
             write!(self.stdout, "?");
         }
@@ -813,14 +813,8 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
             cddl::ast::MemberKey::Bareword { ident, .. } => {
                 write!(self.stdout, "\"{}\"", &ident);
             }
-            cddl::ast::MemberKey::Value { value, .. } => {
-                match value {
-                    cddl::token::Value::INT(value) => write!(self.stdout, "\"{}\"", value),
-                    cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\"", value),
-                    cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\"", value),
-                    cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\"", value),
-                    cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\"", value),
-                };
+            cddl::ast::MemberKey::Value { .. } => {
+                unreachable!()
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
                 unimplemented!()

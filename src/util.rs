@@ -70,7 +70,8 @@ pub fn collect_group_rules(cddl: &cddl::ast::CDDL) -> std::collections::HashSet<
         let mut changed = false;
         for rule in &cddl.rules {
             if let cddl::ast::Rule::Type { rule, .. } = rule {
-                if !group_rules.contains(rule.name.ident)
+                if !rule.is_type_choice_alternate
+                    && !group_rules.contains(rule.name.ident)
                     && type_is_group_ref(&rule.value, &group_rules)
                 {
                     group_rules.insert(rule.name.ident.to_string());
@@ -110,14 +111,14 @@ pub fn type_rule_as_group_rule<'a>(
     tr: &cddl::ast::TypeRule<'a>,
     group_rules: &std::collections::HashSet<String>,
 ) -> Option<cddl::ast::GroupRule<'a>> {
-    if !group_rules.contains(tr.name.ident) {
+    if tr.is_type_choice_alternate || !group_rules.contains(tr.name.ident) {
         return None;
     }
     let entry = type_to_group_entry(&tr.value)?;
     Some(cddl::ast::GroupRule {
         name: tr.name.clone(),
         generic_params: tr.generic_params.clone(),
-        is_group_choice_alternate: tr.is_type_choice_alternate,
+        is_group_choice_alternate: false,
         entry,
         comments_before_assigng: tr.comments_before_assignt.clone(),
         comments_after_assigng: tr.comments_after_assignt.clone(),
@@ -207,7 +208,7 @@ pub fn member_key_literal_value<'a>(
     }
 }
 
-pub fn is_non_cut_type1_member_key(mk: &cddl::ast::MemberKey) -> bool {
+pub fn is_non_cut_non_literal_member_key(mk: &cddl::ast::MemberKey) -> bool {
     matches!(mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. })
         && member_key_literal_value(mk).is_none()
 }
@@ -275,10 +276,7 @@ fn inline_group_as_type<'a>(
     if choice.group_entries.len() != 1 {
         return None;
     }
-    let (inner_entry, comma) = &choice.group_entries[0];
-    if comma.optional_comma {
-        return None;
-    }
+    let (inner_entry, _) = &choice.group_entries[0];
     match inner_entry {
         cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
             if ge.occur.is_none() && ge.member_key.is_none() {
@@ -353,6 +351,7 @@ mod tests {
             browser.Close = ( method: "browser.close" )
             NetworkResult = ( network.AddInterceptResult )
             network.AddInterceptResult = { intercept: text }
+            BrowserCommand /= ( browser.Close )
         "#;
         let cddl = cddl::parser::cddl_from_str(input, true).unwrap();
         let group_rules = collect_group_rules(&cddl);
@@ -363,7 +362,8 @@ mod tests {
         assert!(!group_rules.contains("NetworkResult"));
 
         if let cddl::ast::Rule::Type { rule, .. } = &cddl.rules[0] {
-            assert!(type_rule_as_group_rule(rule, &group_rules).is_some());
+            let gr = type_rule_as_group_rule(rule, &group_rules).unwrap();
+            assert!(!gr.is_group_choice_alternate);
         } else {
             panic!("Expected BrowserCommand to parse as Rule::Type in cddl 0.10.7");
         }
@@ -372,6 +372,12 @@ mod tests {
             assert!(type_rule_as_group_rule(rule, &group_rules).is_none());
         } else {
             panic!("Expected NetworkResult to parse as Rule::Type");
+        }
+
+        if let cddl::ast::Rule::Type { rule, .. } = &cddl.rules[4] {
+            assert!(type_rule_as_group_rule(rule, &group_rules).is_none());
+        } else {
+            panic!("Expected BrowserCommand /= to parse as Rule::Type");
         }
     }
 
@@ -400,7 +406,7 @@ mod tests {
             member_key_literal_value(first_mk),
             Some(cddl::token::Value::TEXT("optional-key".into()))
         );
-        assert!(!is_non_cut_type1_member_key(first_mk));
+        assert!(!is_non_cut_non_literal_member_key(first_mk));
 
         let cddl::ast::GroupEntry::ValueMemberKey { ge: second, .. } = &entries[1].0 else {
             panic!("Expected second entry");
@@ -410,20 +416,20 @@ mod tests {
             member_key_literal_value(second_mk),
             Some(cddl::token::Value::TEXT("cut-key".into()))
         );
-        assert!(!is_non_cut_type1_member_key(second_mk));
+        assert!(!is_non_cut_non_literal_member_key(second_mk));
 
         let cddl::ast::GroupEntry::ValueMemberKey { ge: third, .. } = &entries[2].0 else {
             panic!("Expected third entry");
         };
         let third_mk = third.member_key.as_ref().unwrap();
         assert_eq!(member_key_literal_value(third_mk), None);
-        assert!(is_non_cut_type1_member_key(third_mk));
+        assert!(is_non_cut_non_literal_member_key(third_mk));
     }
 
     #[test]
     fn test_array_group_entry_as_type_entry() {
         let input = r#"
-            Arr = [* MyType, *(uint / text), * MyGroup]
+            Arr = [* MyType, *(uint / text), *(uint / text,), * MyGroup]
             MyType = text
             MyGroup = ( a: int )
         "#;
@@ -438,6 +444,7 @@ mod tests {
         let entries = &group.group_choices[0].group_entries;
         assert!(array_group_entry_as_type_entry(&entries[0].0, &group_rules).is_some());
         assert!(array_group_entry_as_type_entry(&entries[1].0, &group_rules).is_some());
-        assert!(array_group_entry_as_type_entry(&entries[2].0, &group_rules).is_none());
+        assert!(array_group_entry_as_type_entry(&entries[2].0, &group_rules).is_some());
+        assert!(array_group_entry_as_type_entry(&entries[3].0, &group_rules).is_none());
     }
 }
