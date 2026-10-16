@@ -18,7 +18,10 @@ use std::io::Write;
 
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
-use crate::util::{split_namespaced, to_namespaced};
+use crate::util::{
+    array_group_entry_as_type_entry, collect_group_rules, is_non_cut_non_literal_member_key,
+    member_key_literal_value, split_namespaced, to_namespaced, type_rule_as_group_rule,
+};
 
 const MAX_ARRAYS: usize = 1 << 3;
 
@@ -55,6 +58,7 @@ where
     nested_type1: Vec<Type1Context>,
     is_type_mode: bool,
     cyclic_rules: std::collections::HashSet<String>,
+    group_rules: std::collections::HashSet<String>,
     #[allow(dead_code)]
     postamble_options: PostambleOptions,
     stdout: Stdout,
@@ -83,6 +87,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
             nested_type1: Vec::new(),
             is_type_mode: false,
             cyclic_rules: std::collections::HashSet::new(),
+            group_rules: std::collections::HashSet::new(),
             postamble_options: PostambleOptions {
                 #[cfg(feature = "vector_groups")]
                 print_flatten: false,
@@ -308,6 +313,9 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
         &mut self,
         entry: &'b cddl::ast::GroupEntry<'a>,
     ) -> cddl::visitor::Result<Error> {
+        if let Some(ge) = array_group_entry_as_type_entry(entry, &self.group_rules) {
+            return self.visit_value_array_member_key_entry(&ge);
+        }
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
                 self.visit_value_array_member_key_entry(ge)?;
@@ -540,9 +548,13 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
     }
     fn visit_cddl(&mut self, cddl: &'b cddl::ast::CDDL<'a>) -> cddl::visitor::Result<Error> {
         self.cyclic_rules = find_cyclic_rules(cddl);
+        self.group_rules = collect_group_rules(cddl);
         cddl::visitor::walk_cddl(self, cddl)
     }
     fn visit_type_rule(&mut self, tr: &'b cddl::ast::TypeRule<'a>) -> cddl::visitor::Result<Error> {
+        if let Some(gr) = type_rule_as_group_rule(tr, &self.group_rules) {
+            return self.visit_group_rule(&gr);
+        }
         let (namespaces, type_name) = split_namespaced(&tr.name);
         for namespace in &namespaces {
             writeln!(self.stdout, "export namespace {} {{", namespace);
@@ -727,7 +739,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         ));
         self.visit_memberkey(&mk)?;
         let is_optional = matches!(calculate_occurrence(&entry.occur), (0, max) if max > 0)
-            && !matches!(&mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. });
+            && !is_non_cut_non_literal_member_key(&mk);
         if self.is_type_mode && is_optional {
             write!(self.stdout, "z.ZodOptional<");
         }
@@ -803,6 +815,18 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
         &mut self,
         mk: &'b cddl::ast::MemberKey<'a>,
     ) -> cddl::visitor::Result<Error> {
+        if let Some(value) = member_key_literal_value(mk) {
+            self.print_group_joiner();
+            self.enter_map();
+            match value {
+                cddl::token::Value::INT(value) => write!(self.stdout, "\"{}\":", value),
+                cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\":", value),
+                cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\":", value),
+                cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\":", value),
+                cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\":", value),
+            };
+            return Ok(());
+        }
         match mk {
             cddl::ast::MemberKey::Type1 { t1, .. } => {
                 self.exit_map();
@@ -816,16 +840,8 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 self.enter_map();
                 write!(self.stdout, "\"{}\":", &ident);
             }
-            cddl::ast::MemberKey::Value { value, .. } => {
-                self.print_group_joiner();
-                self.enter_map();
-                match value {
-                    cddl::token::Value::INT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::TEXT(value) => write!(self.stdout, "\"{}\":", value),
-                    cddl::token::Value::BYTE(value) => write!(self.stdout, "\"{}\":", value),
-                };
+            cddl::ast::MemberKey::Value { .. } => {
+                unreachable!()
             }
             cddl::ast::MemberKey::NonMemberKey { .. } => {
                 unimplemented!()
@@ -1045,6 +1061,13 @@ fn count_group_choice_items(gc: &cddl::ast::GroupChoice) -> usize {
         match entry {
             cddl::ast::GroupEntry::ValueMemberKey { ge, .. } => {
                 let mk = ge.member_key.as_ref().unwrap();
+                if member_key_literal_value(mk).is_some() {
+                    if !in_object {
+                        in_object = true;
+                        count += 1;
+                    }
+                    continue;
+                }
                 match mk {
                     cddl::ast::MemberKey::Type1 { .. } => {
                         in_object = false;
