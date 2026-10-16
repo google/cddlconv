@@ -185,9 +185,7 @@ pub fn member_key_literal_value<'a>(
 ) -> Option<cddl::token::Value<'a>> {
     match mk {
         cddl::ast::MemberKey::Value { value, .. } => Some(value.clone()),
-        cddl::ast::MemberKey::Type1 {
-            t1, is_cut: false, ..
-        } if t1.operator.is_none() => match &t1.type2 {
+        cddl::ast::MemberKey::Type1 { t1, .. } if t1.operator.is_none() => match &t1.type2 {
             cddl::ast::Type2::IntValue { value, .. } => Some(cddl::token::Value::INT(*value)),
             cddl::ast::Type2::UintValue { value, .. } => Some(cddl::token::Value::UINT(*value)),
             cddl::ast::Type2::FloatValue { value, .. } => Some(cddl::token::Value::FLOAT(*value)),
@@ -382,6 +380,7 @@ mod tests {
         let input = r#"
             m = {
                 ? "optional-key" => int,
+                ? "cut-key" ^ => int,
                 * text => any,
             }
         "#;
@@ -407,8 +406,18 @@ mod tests {
             panic!("Expected second entry");
         };
         let second_mk = second.member_key.as_ref().unwrap();
-        assert_eq!(member_key_literal_value(second_mk), None);
-        assert!(is_non_cut_type1_member_key(second_mk));
+        assert_eq!(
+            member_key_literal_value(second_mk),
+            Some(cddl::token::Value::TEXT("cut-key".into()))
+        );
+        assert!(!is_non_cut_type1_member_key(second_mk));
+
+        let cddl::ast::GroupEntry::ValueMemberKey { ge: third, .. } = &entries[2].0 else {
+            panic!("Expected third entry");
+        };
+        let third_mk = third.member_key.as_ref().unwrap();
+        assert_eq!(member_key_literal_value(third_mk), None);
+        assert!(is_non_cut_type1_member_key(third_mk));
     }
 
     #[test]

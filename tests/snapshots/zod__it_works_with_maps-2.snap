@@ -23,10 +23,10 @@ z.ZodString,z.ZodAny>>> = z.lazy(() => z.object({
 z.record(
 z.string(),z.any()))
 );
-export const ExtensibleMapExample4Schema: z.ZodLazy<z.ZodIntersection<z.ZodRecord<
-z.ZodLiteral<"optional-key">,z.ZodOptional<z.ZodNumber>>,z.ZodRecord<
-z.ZodString,z.ZodAny>>> = z.lazy(() => z.record(
-z.literal("optional-key"),z.number().int().optional()).and(
+export const ExtensibleMapExample4Schema: z.ZodLazy<z.ZodIntersection<z.ZodObject<{
+"optional-key":z.ZodOptional<z.ZodNumber>}>,z.ZodRecord<
+z.ZodString,z.ZodAny>>> = z.lazy(() => z.object({
+"optional-key":z.number().int().optional()}).and(
 z.record(
 z.string(),z.any()))
 );
