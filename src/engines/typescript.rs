@@ -19,9 +19,9 @@ use std::io::Write;
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{
-    array_group_entry_as_type_entry, collect_group_rules, escape_js_string, is_enum_value,
-    is_non_cut_non_literal_member_key, member_key_literal_value, split_namespaced, to_namespaced,
-    to_pascalcase, type_rule_as_group_rule,
+    array_group_entry_as_type_entry, collect_group_rules, escape_js_raw_string, escape_js_string,
+    is_enum_value, is_non_cut_non_literal_member_key, member_key_literal_value, split_namespaced,
+    to_namespaced, to_pascalcase, type_rule_as_group_rule,
 };
 
 const MAX_ELEMENTS: usize = 1 << 3;
@@ -798,7 +798,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                     write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", escape_js_raw_string(value.to_string()))
                 }
             };
             return Ok(());
@@ -903,7 +903,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                     write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", escape_js_raw_string(value.to_string()))
                 }
             };
         }

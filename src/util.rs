@@ -42,44 +42,71 @@ pub fn split_namespaced<T: ToString>(value: T) -> (Vec<String>, String) {
 /// Escapes `value` for use between double quotes in a generated JavaScript or
 /// TypeScript string literal (or string literal type).
 ///
-/// The CDDL lexer keeps escape sequences such as `\"`, `\n` and `\u00e9` in the
-/// raw value. These sequences are also valid in JavaScript, so this function
-/// keeps them as-is. It escapes other characters as follows:
+/// `value` must be the decoded string. cddl 0.10.7 resolves escape sequences
+/// in text literals at parse time, so every `\` here is a literal backslash.
+/// Use [`escape_js_raw_string`] for values that still hold raw CDDL source,
+/// such as byte strings.
 ///
-/// - An unpaired `\` becomes `\\`.
-/// - A raw `"` becomes `\"`.
+/// - `\` becomes `\\`.
+/// - `"` becomes `\"`.
 /// - A `/` after `*` becomes `\/`, so the value can appear in a doc comment.
 /// - Line terminators and control characters become escape sequences.
 pub fn escape_js_string<T: AsRef<str>>(value: T) -> String {
+    let value = value.as_ref();
+    let mut out = String::with_capacity(value.len());
+    for ch in value.chars() {
+        if ch == '\\' {
+            out.push_str("\\\\");
+        } else {
+            push_escaped_char(&mut out, ch);
+        }
+    }
+    out
+}
+
+/// Like [`escape_js_string`], but for raw CDDL source text.
+///
+/// The parser does not decode byte strings, so they keep escape sequences
+/// such as `\"`, `\n` and `\u00e9`. These sequences are also valid in
+/// JavaScript, so this function keeps them as-is. Only a `\` that does not
+/// start a valid escape sequence becomes `\\`.
+pub fn escape_js_raw_string<T: AsRef<str>>(value: T) -> String {
     let chars: Vec<char> = value.as_ref().chars().collect();
     let mut out = String::with_capacity(chars.len());
     let mut i = 0;
     while i < chars.len() {
         let ch = chars[i];
-        match ch {
-            '\\' => {
-                let len = valid_escape_len(&chars[i + 1..]);
-                if len > 0 {
-                    out.push('\\');
-                    out.extend(&chars[i + 1..i + 1 + len]);
-                    i += len;
-                } else {
-                    out.push_str("\\\\");
-                }
+        if ch == '\\' {
+            let len = valid_escape_len(&chars[i + 1..]);
+            if len > 0 {
+                out.push('\\');
+                out.extend(&chars[i + 1..i + 1 + len]);
+                i += len;
+            } else {
+                out.push_str("\\\\");
             }
-            '"' => out.push_str("\\\""),
-            '/' if out.ends_with('*') => out.push_str("\\/"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if c.is_control() || c == '\u{2028}' || c == '\u{2029}' => {
-                out.push_str(&format!("\\u{:04x}", c as u32));
-            }
-            c => out.push(c),
+        } else {
+            push_escaped_char(&mut out, ch);
         }
         i += 1;
     }
     out
+}
+
+/// Appends `ch` to `out`, escaped for a double-quoted JavaScript string.
+/// The callers handle `\`.
+fn push_escaped_char(out: &mut String, ch: char) {
+    match ch {
+        '"' => out.push_str("\\\""),
+        '/' if out.ends_with('*') => out.push_str("\\/"),
+        '\n' => out.push_str("\\n"),
+        '\r' => out.push_str("\\r"),
+        '\t' => out.push_str("\\t"),
+        c if c.is_control() || c == '\u{2028}' || c == '\u{2029}' => {
+            out.push_str(&format!("\\u{:04x}", c as u32));
+        }
+        c => out.push(c),
+    }
 }
 
 /// Returns the number of characters after a `\` that form a valid JavaScript
@@ -131,7 +158,9 @@ pub fn is_enum_value<T: AsRef<str>>(value: T) -> bool {
         && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
 }
 
-pub fn collect_group_rules(cddl: &cddl::ast::CDDL) -> std::collections::HashSet<String> {
+/// Returns the names of all group rules, including `Name = ( SingleIdent )` rules that
+/// cddl 0.10.7 parses as `Rule::Type(ParenthesizedType)` when `SingleIdent` is a group.
+pub(crate) fn collect_group_rules(cddl: &cddl::ast::CDDL) -> std::collections::HashSet<String> {
     let mut group_rules = std::collections::HashSet::new();
     for rule in &cddl.rules {
         if let cddl::ast::Rule::Group { rule, .. } = rule {
@@ -158,10 +187,7 @@ pub fn collect_group_rules(cddl: &cddl::ast::CDDL) -> std::collections::HashSet<
     group_rules
 }
 
-fn type_is_group_ref(
-    t: &cddl::ast::Type,
-    group_rules: &std::collections::HashSet<String>,
-) -> bool {
+fn type_is_group_ref(t: &cddl::ast::Type, group_rules: &std::collections::HashSet<String>) -> bool {
     if t.type_choices.len() != 1 {
         return false;
     }
@@ -179,7 +205,9 @@ fn type_is_group_ref(
     }
 }
 
-pub fn type_rule_as_group_rule<'a>(
+/// Converts a `Name = ( SingleIdent )` rule, which cddl 0.10.7 parses as
+/// `Rule::Type(ParenthesizedType)`, back to a group rule.
+pub(crate) fn type_rule_as_group_rule<'a>(
     tr: &cddl::ast::TypeRule<'a>,
     group_rules: &std::collections::HashSet<String>,
 ) -> Option<cddl::ast::GroupRule<'a>> {
@@ -253,7 +281,10 @@ fn type_to_group_entry<'a>(t: &cddl::ast::Type<'a>) -> Option<cddl::ast::GroupEn
     }
 }
 
-pub fn member_key_literal_value<'a>(
+/// Returns the literal value of a member key. This includes arrow map keys
+/// (`? "key" => int`), which cddl 0.10.7 parses as `MemberKey::Type1` instead of
+/// `MemberKey::Value`.
+pub(crate) fn member_key_literal_value<'a>(
     mk: &cddl::ast::MemberKey<'a>,
 ) -> Option<cddl::token::Value<'a>> {
     match mk {
@@ -280,12 +311,16 @@ pub fn member_key_literal_value<'a>(
     }
 }
 
-pub fn is_non_cut_non_literal_member_key(mk: &cddl::ast::MemberKey) -> bool {
+/// Returns true for a non-cut `MemberKey::Type1` that is not a literal key (see
+/// [`member_key_literal_value`]), such as `* text => any`.
+pub(crate) fn is_non_cut_non_literal_member_key(mk: &cddl::ast::MemberKey) -> bool {
     matches!(mk, cddl::ast::MemberKey::Type1 { is_cut: false, .. })
         && member_key_literal_value(mk).is_none()
 }
 
-pub fn array_group_entry_as_type_entry<'a>(
+/// Converts a bare type name or parenthesized type inside an array, which cddl 0.10.7
+/// parses as `GroupEntry::TypeGroupname` or `GroupEntry::InlineGroup`, back to a type entry.
+pub(crate) fn array_group_entry_as_type_entry<'a>(
     entry: &cddl::ast::GroupEntry<'a>,
     group_rules: &std::collections::HashSet<String>,
 ) -> Option<cddl::ast::ValueMemberKeyEntry<'a>> {
@@ -420,34 +455,55 @@ mod tests {
     fn test_escape_js_string() {
         // Plain values do not change.
         assert_eq!(escape_js_string("hello world"), "hello world");
-        // Valid escape sequences from the CDDL source do not change.
-        assert_eq!(escape_js_string(r#"a\"b\\c\n\/"#), r#"a\"b\\c\n\/"#);
-        assert_eq!(escape_js_string(r"\u00e9\u{1F600}\'"), r"\u00e9\u{1F600}\'");
-        // Code point escapes accept leading zeros, up to U+10FFFF.
-        assert_eq!(
-            escape_js_string(r"\u{0041}\u{000000041}"),
-            r"\u{0041}\u{000000041}"
-        );
-        assert_eq!(escape_js_string(r"\u{10FFFF}"), r"\u{10FFFF}");
-        assert_eq!(escape_js_string(r"\u{110000}"), r"\\u{110000}");
-        assert_eq!(
-            escape_js_string(r"\u{FFFFFFFFFF}\u{}"),
-            r"\\u{FFFFFFFFFF}\\u{}"
-        );
-        // Raw double quotes (allowed in byte strings) are escaped.
-        assert_eq!(escape_js_string(r#"'say "hi"'"#), r#"'say \"hi\"'"#);
-        // An escaped backslash followed by a raw quote.
-        assert_eq!(escape_js_string(r#"\\""#), r#"\\\""#);
-        // Unpaired or invalid backslashes are escaped.
+        assert_eq!(escape_js_string("unicode é"), "unicode é");
+        // Every backslash is a literal backslash.
+        assert_eq!(escape_js_string(r"\d+\.\d+"), r"\\d+\\.\\d+");
+        assert_eq!(escape_js_string(r"\n\b\u00e9"), r"\\n\\b\\u00e9");
         assert_eq!(escape_js_string(r"a\"), r"a\\");
-        assert_eq!(escape_js_string(r"\x41\u12"), r"\\x41\\u12");
+        // Double quotes are escaped.
+        assert_eq!(escape_js_string(r#"a"b"#), r#"a\"b"#);
+        assert_eq!(escape_js_string(r#"\""#), r#"\\\""#);
         // Line terminators and control characters are escaped.
         assert_eq!(
-            escape_js_string("a\nb\r\t\u{0}\u{2028}\u{2029}"),
-            r"a\nb\r\t\u0000\u2028\u2029"
+            escape_js_string("a\nb\r\t\u{0}\u{8}\u{2028}\u{2029}"),
+            r"a\nb\r\t\u0000\u0008\u2028\u2029"
         );
         // Glob-like values are safe to use in doc comments.
         assert_eq!(escape_js_string("src/**/*.ts"), r"src/**\/*.ts");
+    }
+
+    #[test]
+    fn test_escape_js_raw_string() {
+        // Plain values do not change.
+        assert_eq!(escape_js_raw_string("hello world"), "hello world");
+        // Valid escape sequences from the CDDL source do not change.
+        assert_eq!(escape_js_raw_string(r#"a\"b\\c\n\/"#), r#"a\"b\\c\n\/"#);
+        assert_eq!(escape_js_raw_string(r"\u00e9\u{1F600}\'"), r"\u00e9\u{1F600}\'");
+        // Code point escapes accept leading zeros, up to U+10FFFF.
+        assert_eq!(
+            escape_js_raw_string(r"\u{0041}\u{000000041}"),
+            r"\u{0041}\u{000000041}"
+        );
+        assert_eq!(escape_js_raw_string(r"\u{10FFFF}"), r"\u{10FFFF}");
+        assert_eq!(escape_js_raw_string(r"\u{110000}"), r"\\u{110000}");
+        assert_eq!(
+            escape_js_raw_string(r"\u{FFFFFFFFFF}\u{}"),
+            r"\\u{FFFFFFFFFF}\\u{}"
+        );
+        // Raw double quotes (allowed in byte strings) are escaped.
+        assert_eq!(escape_js_raw_string(r#"'say "hi"'"#), r#"'say \"hi\"'"#);
+        // An escaped backslash followed by a raw quote.
+        assert_eq!(escape_js_raw_string(r#"\\""#), r#"\\\""#);
+        // Unpaired or invalid backslashes are escaped.
+        assert_eq!(escape_js_raw_string(r"a\"), r"a\\");
+        assert_eq!(escape_js_raw_string(r"\x41\u12"), r"\\x41\\u12");
+        // Line terminators and control characters are escaped.
+        assert_eq!(
+            escape_js_raw_string("a\nb\r\t\u{0}\u{2028}\u{2029}"),
+            r"a\nb\r\t\u0000\u2028\u2029"
+        );
+        // Glob-like values are safe to use in doc comments.
+        assert_eq!(escape_js_raw_string("src/**/*.ts"), r"src/**\/*.ts");
     }
 
     #[test]

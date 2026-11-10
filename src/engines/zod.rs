@@ -19,7 +19,7 @@ use std::io::Write;
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{
-    array_group_entry_as_type_entry, collect_group_rules, escape_js_string,
+    array_group_entry_as_type_entry, collect_group_rules, escape_js_raw_string, escape_js_string,
     is_non_cut_non_literal_member_key, member_key_literal_value, split_namespaced, to_namespaced,
     type_rule_as_group_rule,
 };
@@ -828,7 +828,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                     write!(self.stdout, "\"{}\":", escape_js_string(value.to_string()))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\":", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\":", escape_js_raw_string(value.to_string()))
                 }
             };
             return Ok(());
@@ -1022,7 +1022,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                         write!(
                             self.stdout,
                             "z.ZodLiteral<\"{}\">",
-                            escape_js_string(value.to_string())
+                            escape_js_raw_string(value.to_string())
                         )
                     }
                 },
@@ -1051,7 +1051,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 cddl::token::Value::BYTE(value) => write!(
                     self.stdout,
                     "z.literal(\"{}\")",
-                    escape_js_string(value.to_string())
+                    escape_js_raw_string(value.to_string())
                 ),
             },
             ValueMode::Generic => match value {
@@ -1071,7 +1071,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                     write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", escape_js_raw_string(value.to_string()))
                 }
             },
         };
@@ -1101,11 +1101,14 @@ fn count_group_choice_items(gc: &cddl::ast::GroupChoice) -> usize {
                         in_object = false;
                         count += 1;
                     }
-                    cddl::ast::MemberKey::Bareword { .. } | cddl::ast::MemberKey::Value { .. } => {
+                    cddl::ast::MemberKey::Bareword { .. } => {
                         if !in_object {
                             in_object = true;
                             count += 1;
                         }
+                    }
+                    cddl::ast::MemberKey::Value { .. } => {
+                        unreachable!()
                     }
                     cddl::ast::MemberKey::NonMemberKey { .. } => {
                         unimplemented!()
