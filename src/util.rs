@@ -96,8 +96,13 @@ fn valid_escape_len(rest: &[char]) -> usize {
                     .iter()
                     .take_while(|ch| ch.is_ascii_hexdigit())
                     .count();
-                if (1..=6).contains(&digits) && rest.get(2 + digits) == Some(&'}') {
-                    return 3 + digits;
+                if digits > 0 && rest.get(2 + digits) == Some(&'}') {
+                    // JavaScript accepts any number of digits, as long as the
+                    // value is a valid code point.
+                    let hex: String = rest[2..2 + digits].iter().collect();
+                    if u32::from_str_radix(&hex, 16).is_ok_and(|cp| cp <= 0x10FFFF) {
+                        return 3 + digits;
+                    }
                 }
             }
             0
@@ -150,6 +155,17 @@ mod tests {
         // Valid escape sequences from the CDDL source do not change.
         assert_eq!(escape_js_string(r#"a\"b\\c\n\/"#), r#"a\"b\\c\n\/"#);
         assert_eq!(escape_js_string(r"\u00e9\u{1F600}\'"), r"\u00e9\u{1F600}\'");
+        // Code point escapes accept leading zeros, up to U+10FFFF.
+        assert_eq!(
+            escape_js_string(r"\u{0041}\u{000000041}"),
+            r"\u{0041}\u{000000041}"
+        );
+        assert_eq!(escape_js_string(r"\u{10FFFF}"), r"\u{10FFFF}");
+        assert_eq!(escape_js_string(r"\u{110000}"), r"\\u{110000}");
+        assert_eq!(
+            escape_js_string(r"\u{FFFFFFFFFF}\u{}"),
+            r"\\u{FFFFFFFFFF}\\u{}"
+        );
         // Raw double quotes (allowed in byte strings) are escaped.
         assert_eq!(escape_js_string(r#"'say "hi"'"#), r#"'say \"hi\"'"#);
         // An escaped backslash followed by a raw quote.
