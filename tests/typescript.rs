@@ -46,3 +46,7 @@ test!(
     "examples/array_occurences.cddl"
 );
 test!(it_works_with_enums, "examples/enums.cddl");
+test!(
+    it_works_with_string_literals,
+    "examples/string_literals.cddl"
+);

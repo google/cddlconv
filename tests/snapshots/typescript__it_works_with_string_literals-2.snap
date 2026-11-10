@@ -1,0 +1,14 @@
+---
+source: tests/typescript.rs
+expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
+---
+export type QuotedBytes = ("'say \"hello\"'");
+export type TextEscapes = ("quote \" backslash \\ newline \n unicode \u00e9");
+
+/**
+ * @defaultValue `"src/**\/*.ts"`
+ */
+export type GlobPattern = (string);
+export type Headers = (({
+"'content-type'":(string),"x-\"custom\"":(string)}));
+export type Greeting = ("hi"| "hello \"there\""| "'say \"hey\"'");
