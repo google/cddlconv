@@ -19,7 +19,7 @@ use std::io::Write;
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{
-    array_group_entry_as_type_entry, collect_group_rules, escape_js_raw_string, escape_js_string,
+    array_group_entry_as_type_entry, byte_value_to_js_string, collect_group_rules, escape_js_string,
     is_non_cut_non_literal_member_key, member_key_literal_value, split_namespaced, to_namespaced,
     type_rule_as_group_rule,
 };
@@ -122,7 +122,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 write!(self.stdout, "z.ZodEnum<{{");
                 for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
                     if let cddl::ast::Type2::TextValue { value, .. } = type2 {
-                        let value = escape_js_string(value.to_string());
+                        let value = escape_js_string(value);
                         write!(self.stdout, "\"{}\":\"{}\",", value, value);
                     }
                 }
@@ -131,7 +131,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                 write!(self.stdout, "z.enum([");
                 for type2 in t.type_choices.iter().map(|choice| &choice.type1.type2) {
                     if let cddl::ast::Type2::TextValue { value, .. } = type2 {
-                        write!(self.stdout, "\"{}\",", escape_js_string(value.to_string()));
+                        write!(self.stdout, "\"{}\",", escape_js_string(value));
                     }
                 }
                 write!(self.stdout, "])");
@@ -825,10 +825,10 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\":", value),
                 cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\":", value),
                 cddl::token::Value::TEXT(value) => {
-                    write!(self.stdout, "\"{}\":", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\":", escape_js_string(value))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\":", escape_js_raw_string(value.to_string()))
+                    write!(self.stdout, "\"{}\":", byte_value_to_js_string(&value))
                 }
             };
             return Ok(());
@@ -1015,14 +1015,14 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                         write!(
                             self.stdout,
                             "z.ZodLiteral<\"{}\">",
-                            escape_js_string(value.to_string())
+                            escape_js_string(value)
                         )
                     }
                     cddl::token::Value::BYTE(value) => {
                         write!(
                             self.stdout,
                             "z.ZodLiteral<\"{}\">",
-                            escape_js_raw_string(value.to_string())
+                            byte_value_to_js_string(value)
                         )
                     }
                 },
@@ -1046,12 +1046,12 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 cddl::token::Value::TEXT(value) => write!(
                     self.stdout,
                     "z.literal(\"{}\")",
-                    escape_js_string(value.to_string())
+                    escape_js_string(value)
                 ),
                 cddl::token::Value::BYTE(value) => write!(
                     self.stdout,
                     "z.literal(\"{}\")",
-                    escape_js_raw_string(value.to_string())
+                    byte_value_to_js_string(value)
                 ),
             },
             ValueMode::Generic => match value {
@@ -1068,10 +1068,10 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 cddl::token::Value::UINT(value) => write!(self.stdout, "{}", value),
                 cddl::token::Value::FLOAT(value) => write!(self.stdout, "{}", value),
                 cddl::token::Value::TEXT(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", escape_js_string(value))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_raw_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", byte_value_to_js_string(value))
                 }
             },
         };

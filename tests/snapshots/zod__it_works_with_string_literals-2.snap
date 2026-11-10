@@ -3,6 +3,9 @@ source: tests/zod.rs
 expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
 export const QuotedBytesSchema: z.ZodLiteral<"'say \"hello\"'"> = z.literal("'say \"hello\"'");
+export const EscapedBytesSchema: z.ZodLiteral<"'a \\ backslash \n'"> = z.literal("'a \\ backslash \n'");
+export const HexBytesSchema: z.ZodLiteral<"h'FF'"> = z.literal("h'FF'");
+export const HexBackslashSchema: z.ZodLiteral<"h'5C6E'"> = z.literal("h'5C6E'");
 export const TextEscapesSchema: z.ZodLiteral<"quote \" backslash \\ newline \n unicode é"> = z.literal("quote \" backslash \\ newline \n unicode é");
 export const GlobPatternSchema: z.ZodLazy<z.ZodDefault<z.ZodString>> = z.lazy(() => z.string().default("src/**\/*.ts"));
 export const VersionSchema: z.ZodLazy<z.ZodString> = z.lazy(() => z.string().regex(new RegExp("\\d+\\.\\d+")));
@@ -11,3 +14,7 @@ export const HeadersSchema: z.ZodLazy<z.ZodObject<{
 "'content-type'":z.ZodString,"x-\"custom\"":z.ZodString}>> = z.lazy(() => z.object({
 "'content-type'":z.string(),"x-\"custom\"":z.string()}));
 export const GreetingSchema: z.ZodLazy<z.ZodUnion<readonly [z.ZodLiteral<"hi">,z.ZodLiteral<"hello \"there\"">,z.ZodLiteral<"'say \"hey\"'">]>> = z.lazy(() => z.union([z.literal("hi"),z.literal("hello \"there\""),z.literal("'say \"hey\"'")]));
+export const QuotedEnumSchema: z.ZodLazy<z.ZodEnum<{"say \"hi\"":"say \"hi\"","back\\slash":"back\\slash",}>> = z.lazy(() => z.enum(["say \"hi\"","back\\slash",]));
+export const CodesSchema: z.ZodLazy<z.ZodObject<{
+"1":z.ZodString,"na\\me":z.ZodString}>> = z.lazy(() => z.object({
+"1":z.string(),"na\\me":z.string()}));

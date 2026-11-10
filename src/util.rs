@@ -45,7 +45,7 @@ pub fn split_namespaced<T: ToString>(value: T) -> (Vec<String>, String) {
 /// `value` must be the decoded string. cddl 0.10.7 resolves escape sequences
 /// in text literals at parse time, so every `\` here is a literal backslash.
 /// Use [`escape_js_raw_string`] for values that still hold raw CDDL source,
-/// such as byte strings.
+/// such as single-quoted byte strings.
 ///
 /// - `\` becomes `\\`.
 /// - `"` becomes `\"`.
@@ -66,10 +66,13 @@ pub fn escape_js_string<T: AsRef<str>>(value: T) -> String {
 
 /// Like [`escape_js_string`], but for raw CDDL source text.
 ///
-/// The parser does not decode byte strings, so they keep escape sequences
-/// such as `\"`, `\n` and `\u00e9`. These sequences are also valid in
-/// JavaScript, so this function keeps them as-is. Only a `\` that does not
-/// start a valid escape sequence becomes `\\`.
+/// The parser does not decode single-quoted byte strings (`'...'`), so they
+/// keep escape sequences such as `\"`, `\n` and `\u00e9`. These sequences are
+/// also valid in JavaScript, so this function keeps them as-is. Only a `\`
+/// that does not start a valid escape sequence becomes `\\`.
+///
+/// The parser does decode `h'...'` byte strings. Use
+/// [`byte_value_to_js_string`] to handle any byte string.
 pub fn escape_js_raw_string<T: AsRef<str>>(value: T) -> String {
     let chars: Vec<char> = value.as_ref().chars().collect();
     let mut out = String::with_capacity(chars.len());
@@ -91,6 +94,29 @@ pub fn escape_js_raw_string<T: AsRef<str>>(value: T) -> String {
         i += 1;
     }
     out
+}
+
+/// Returns `value` in CDDL notation, escaped for use between double quotes in
+/// a generated JavaScript or TypeScript string literal.
+///
+/// This does not use the `Display` impl of `ByteValue`: cddl 0.10.7 stores
+/// `h'...'` values as decoded bytes, and `Display` fails if they are not valid
+/// UTF-8.
+pub(crate) fn byte_value_to_js_string(value: &cddl::token::ByteValue) -> String {
+    match value {
+        // Raw source text between the quotes.
+        cddl::token::ByteValue::UTF8(bytes) => {
+            escape_js_raw_string(format!("'{}'", String::from_utf8_lossy(bytes)))
+        }
+        // Decoded bytes. Encode them again, as in the CDDL source.
+        cddl::token::ByteValue::B16(bytes) => {
+            let hex: String = bytes.iter().map(|byte| format!("{:02X}", byte)).collect();
+            format!("h'{}'", hex)
+        }
+        cddl::token::ByteValue::B64(_) => {
+            unreachable!("cddl 0.10.7 does not produce ByteValue::B64")
+        }
+    }
 }
 
 /// Appends `ch` to `out`, escaped for a double-quoted JavaScript string.
@@ -225,6 +251,27 @@ pub(crate) fn type_rule_as_group_rule<'a>(
     })
 }
 
+/// Unwraps the outer `Type2::ParenthesizedType` of a `Name = ( SingleIdent )` rule, which
+/// cddl 0.10.7 parses as a parenthesized type instead of a group rule.
+pub(crate) fn unwrap_single_ident_parens<'a, 'b>(
+    t: &'b cddl::ast::Type<'a>,
+) -> &'b cddl::ast::Type<'a> {
+    if let [choice] = t.type_choices.as_slice() {
+        if choice.type1.operator.is_none() {
+            if let cddl::ast::Type2::ParenthesizedType { pt, .. } = &choice.type1.type2 {
+                if let [inner] = pt.type_choices.as_slice() {
+                    if inner.type1.operator.is_none()
+                        && matches!(inner.type1.type2, cddl::ast::Type2::Typename { .. })
+                    {
+                        return pt;
+                    }
+                }
+            }
+        }
+    }
+    t
+}
+
 fn type_to_group_entry<'a>(t: &cddl::ast::Type<'a>) -> Option<cddl::ast::GroupEntry<'a>> {
     if t.type_choices.len() != 1 {
         return None;
@@ -302,9 +349,7 @@ pub(crate) fn member_key_literal_value<'a>(
             cddl::ast::Type2::B16ByteString { value, .. } => Some(cddl::token::Value::BYTE(
                 cddl::token::ByteValue::B16(value.clone()),
             )),
-            cddl::ast::Type2::B64ByteString { value, .. } => Some(cddl::token::Value::BYTE(
-                cddl::token::ByteValue::B64(value.clone()),
-            )),
+            // cddl 0.10.7 does not produce `Type2::B64ByteString` (see `byte_value_to_js_string`).
             _ => None,
         },
         _ => None,
@@ -507,6 +552,54 @@ mod tests {
     }
 
     #[test]
+    fn test_byte_value_to_js_string() {
+        use cddl::token::ByteValue;
+        // Single-quoted byte strings hold raw source text.
+        assert_eq!(
+            byte_value_to_js_string(&ByteValue::UTF8(br#"say "hi" \n"#.as_ref().into())),
+            r#"'say \"hi\" \n'"#
+        );
+        // Hex byte strings hold decoded bytes, which need not be valid UTF-8.
+        assert_eq!(
+            byte_value_to_js_string(&ByteValue::B16([0xFF].as_ref().into())),
+            "h'FF'"
+        );
+        assert_eq!(
+            byte_value_to_js_string(&ByteValue::B16(br"\n".as_ref().into())),
+            "h'5C6E'"
+        );
+        // `member_key_literal_value` does not construct `ByteValue::B64` from `B64ByteString`.
+        let b64_mk = cddl::ast::MemberKey::Type1 {
+            t1: Box::new(cddl::ast::Type1 {
+                type2: cddl::ast::Type2::B64ByteString {
+                    value: [0xFF].as_ref().into(),
+                    span: Default::default(),
+                },
+                operator: None,
+                span: Default::default(),
+                comments_after_type: None,
+            }),
+            is_cut: false,
+            span: Default::default(),
+            comments_before_cut: None,
+            comments_after_cut: None,
+            comments_after_arrowmap: None,
+        };
+        assert_eq!(member_key_literal_value(&b64_mk), None);
+        // cddl 0.10.7 has no `b64'...'` token: as a value it is a parse error, and inside a map
+        // `{ b64'...' => int }` lexes as group name `b64` followed by `'...' => int`.
+        assert!(cddl::parser::cddl_from_str("x = b64'aGVsbG8='", false).is_err());
+        let parsed = cddl::parser::cddl_from_str("m = { b64'aGVsbG8=' => int }", false).unwrap();
+        let cddl::ast::Rule::Type { rule, .. } = &parsed.rules[0] else {
+            panic!("Expected type rule");
+        };
+        let cddl::ast::Type2::Map { group, .. } = &rule.value.type_choices[0].type1.type2 else {
+            panic!("Expected map");
+        };
+        assert_eq!(group.group_choices[0].group_entries.len(), 2);
+    }
+
+    #[test]
     fn test_collect_group_rules_and_type_rule_as_group_rule() {
         let input = r#"
             BrowserCommand = ( browser.Close )
@@ -514,6 +607,7 @@ mod tests {
             NetworkResult = ( network.AddInterceptResult )
             network.AddInterceptResult = { intercept: text }
             BrowserCommand /= ( browser.Close )
+            MultiChoice = ( network.AddInterceptResult / text )
         "#;
         let cddl = cddl::parser::cddl_from_str(input, true).unwrap();
         let group_rules = collect_group_rules(&cddl);
@@ -532,6 +626,11 @@ mod tests {
 
         if let cddl::ast::Rule::Type { rule, .. } = &cddl.rules[2] {
             assert!(type_rule_as_group_rule(rule, &group_rules).is_none());
+            let unwrapped = unwrap_single_ident_parens(&rule.value);
+            assert!(matches!(
+                unwrapped.type_choices[0].type1.type2,
+                cddl::ast::Type2::Typename { .. }
+            ));
         } else {
             panic!("Expected NetworkResult to parse as Rule::Type");
         }
@@ -540,6 +639,16 @@ mod tests {
             assert!(type_rule_as_group_rule(rule, &group_rules).is_none());
         } else {
             panic!("Expected BrowserCommand /= to parse as Rule::Type");
+        }
+
+        if let cddl::ast::Rule::Type { rule, .. } = &cddl.rules[5] {
+            let unwrapped = unwrap_single_ident_parens(&rule.value);
+            assert!(matches!(
+                unwrapped.type_choices[0].type1.type2,
+                cddl::ast::Type2::ParenthesizedType { .. }
+            ));
+        } else {
+            panic!("Expected MultiChoice to parse as Rule::Type");
         }
     }
 

@@ -19,9 +19,9 @@ use std::io::Write;
 use cddl::{ast::Occurrence, visitor::Visitor, Error};
 
 use crate::util::{
-    array_group_entry_as_type_entry, collect_group_rules, escape_js_raw_string, escape_js_string,
+    array_group_entry_as_type_entry, byte_value_to_js_string, collect_group_rules, escape_js_string,
     is_enum_value, is_non_cut_non_literal_member_key, member_key_literal_value, split_namespaced,
-    to_namespaced, to_pascalcase, type_rule_as_group_rule,
+    to_namespaced, to_pascalcase, type_rule_as_group_rule, unwrap_single_ident_parens,
 };
 
 const MAX_ELEMENTS: usize = 1 << 3;
@@ -154,7 +154,7 @@ impl<'a, 'b: 'a, 'c, Stdout: Write, Stderr: Write> Engine<Stdout, Stderr> {
                     self.stdout,
                     "{}: \"{}\",",
                     to_pascalcase(value),
-                    escape_js_string(value.to_string())
+                    escape_js_string(value)
                 );
             } else {
                 panic!("Called `visit_enum_type` on non-textual type");
@@ -604,7 +604,7 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 &tr.generic_params,
             )?;
             write!(self.stdout, " = ");
-            self.visit_type(&tr.value)?;
+            self.visit_type(unwrap_single_ident_parens(&tr.value))?;
             writeln!(self.stdout, ";");
         }
         for _ in &namespaces {
@@ -795,10 +795,10 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 cddl::token::Value::UINT(value) => write!(self.stdout, "\"{}\"", value),
                 cddl::token::Value::FLOAT(value) => write!(self.stdout, "\"{}\"", value),
                 cddl::token::Value::TEXT(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", escape_js_string(value))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_raw_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", byte_value_to_js_string(&value))
                 }
             };
             return Ok(());
@@ -900,10 +900,10 @@ impl<'a, 'b: 'a, Stdout: Write, Stderr: Write> Visitor<'a, 'b, Error> for Engine
                 cddl::token::Value::UINT(value) => write!(self.stdout, "{}", value),
                 cddl::token::Value::FLOAT(value) => write!(self.stdout, "{}", value),
                 cddl::token::Value::TEXT(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", escape_js_string(value))
                 }
                 cddl::token::Value::BYTE(value) => {
-                    write!(self.stdout, "\"{}\"", escape_js_raw_string(value.to_string()))
+                    write!(self.stdout, "\"{}\"", byte_value_to_js_string(value))
                 }
             };
         }
