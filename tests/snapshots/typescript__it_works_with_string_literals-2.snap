@@ -3,12 +3,28 @@ source: tests/typescript.rs
 expression: "String :: from_utf8(stdout.into_inner().unwrap()).unwrap()"
 ---
 export type QuotedBytes = ("'say \"hello\"'");
-export type TextEscapes = ("quote \" backslash \\ newline \n unicode \u00e9");
+export type EscapedBytes = ("'a \\ backslash \n'");
+export type HexBytes = ("h'FF'");
+export type HexBackslash = ("h'5C6E'");
+export type TextEscapes = ("quote \" backslash \\ newline \n unicode é");
 
 /**
  * @defaultValue `"src/**\/*.ts"`
  */
 export type GlobPattern = (string);
+
+/**
+ * Must match the pattern `"\\d+\\.\\d+"`.
+ */
+export type Version = (string);
+
+/**
+ * Must match the pattern `"\\bword\\b"`.
+ */
+export type Word = (string);
 export type Headers = (({
 "'content-type'":(string),"x-\"custom\"":(string)}));
 export type Greeting = ("hi"| "hello \"there\""| "'say \"hey\"'");
+export type QuotedEnum = ("say \"hi\""| "back\\slash");
+export type Codes = (({
+"1":(string),"na\\me":(string)}));

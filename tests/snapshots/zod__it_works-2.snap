@@ -501,8 +501,7 @@ export const UserPromptOpenedParametersSchema: z.ZodLazy<z.ZodObject<{
 }
 export const 
 NetworkCommandSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Network.AddInterceptSchema,typeof Network.ContinueRequestSchema,typeof Network.ContinueResponseSchema,typeof Network.ContinueWithAuthSchema,typeof Network.FailRequestSchema,typeof Network.ProvideResponseSchema,typeof Network.RemoveInterceptSchema]>> = z.lazy(() => z.union([Network.AddInterceptSchema,Network.ContinueRequestSchema,Network.ContinueResponseSchema,Network.ContinueWithAuthSchema,Network.FailRequestSchema,Network.ProvideResponseSchema,Network.RemoveInterceptSchema]));
-export const 
-NetworkResultSchema: z.ZodLazy<typeof Network.AddInterceptResultSchema> = z.lazy(() => Network.AddInterceptResultSchema);
+export const NetworkResultSchema: z.ZodLazy<typeof Network.AddInterceptResultSchema> = z.lazy(() => Network.AddInterceptResultSchema);
 export const 
 NetworkEventSchema: z.ZodLazy<z.ZodUnion<readonly [typeof Network.AuthRequiredSchema,typeof Network.BeforeRequestSentSchema,typeof Network.FetchErrorSchema,typeof Network.ResponseCompletedSchema,typeof Network.ResponseStartedSchema]>> = z.lazy(() => z.union([Network.AuthRequiredSchema,Network.BeforeRequestSentSchema,Network.FetchErrorSchema,Network.ResponseCompletedSchema,Network.ResponseStartedSchema]));
 export namespace Network {
