@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/google/cddlconv/compare/cddlconv-v0.2.0...cddlconv-v0.2.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* escape string literals in generated output ([#101](https://github.com/google/cddlconv/issues/101)) ([c9d1230](https://github.com/google/cddlconv/commit/c9d1230ace2820327150d5422bd780e3f68505aa))
+
 ## [0.2.0](https://github.com/google/cddlconv/compare/cddlconv-v0.1.12...cddlconv-v0.2.0) (2026-09-29)
 
 
