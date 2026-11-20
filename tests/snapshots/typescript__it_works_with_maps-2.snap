@@ -9,6 +9,6 @@ export type ExtensibleMapExample2 = (({
 export type ExtensibleMapExample3 = (({
 "optional-key"?:(number),[key: string]:(any)}));
 export type ExtensibleMapExample4 = (({
-["optional-key"]?:(number),[key: string]:(any)}));
+"optional-key"?:(number),[key: string]:(any)}));
 export type ExampleMap = (({
 "hyphenated-key"?:(string),"another-key"?:(string),"standardIdentifier"?:(string),"1"?:(string)}));

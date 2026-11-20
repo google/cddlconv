@@ -1,8 +1,18 @@
 quoted-bytes = 'say "hello"'
+escaped-bytes = 'a \\ backslash \n'
+hex-bytes = h'FF'
+hex-backslash = h'5C6E'
 text-escapes = "quote \" backslash \\ newline \n unicode \u00e9"
 glob-pattern = tstr .default "src/**/*.ts"
+version = tstr .regexp "\\d+\\.\\d+"
+word = tstr .regexp "\\bword\\b"
 headers = {
-  'content-type': tstr,
+  'content-type' => tstr,
   "x-\"custom\"": tstr,
 }
 greeting = "hi" / "hello \"there\"" / 'say "hey"'
+quoted-enum = "say \"hi\"" / "back\\slash"
+codes = {
+  1 => tstr,
+  "na\\me" => tstr,
+}
